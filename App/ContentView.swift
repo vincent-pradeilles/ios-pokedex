@@ -8,6 +8,7 @@ struct ContentView: View {
   @State private var journal = false
   @State private var camera = false
   @State private var photo: PhotosPickerItem?
+  @Environment(\.scenePhase) private var scenePhase
   @Environment(\.horizontalSizeClass) private var sizeClass
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -55,6 +56,12 @@ struct ContentView: View {
         } catch { model.error = error.localizedDescription }
         self.photo = nil
       }
+      .alert("Narration unavailable", isPresented: Binding(get: { model.narrator.error != nil }, set: { if !$0 { model.narrator.error = nil } })) {
+        Button("OK", role: .cancel) { model.narrator.error = nil }
+      } message: { Text(model.narrator.error ?? "") }
+      .onChange(of: scenePhase) { _, phase in
+        if phase != .active { model.narrator.stop() }
+      }
       .sensoryFeedback(.success, trigger: model.history.count)
     }
     .tint(.white)
@@ -79,7 +86,7 @@ struct ContentView: View {
       return
     }
     let granted = await AVCaptureDevice.requestAccess(for: .video)
-    if granted { camera = true } else { model.error = "Camera access is off. Allow it in system Settings, or choose a photo from your library." }
+    if granted { model.narrator.stop(); camera = true } else { model.error = "Camera access is off. Allow it in system Settings, or choose a photo from your library." }
   }
 }
 

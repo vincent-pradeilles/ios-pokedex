@@ -12,6 +12,7 @@ The app identifies Pokémon from photos using Apple’s on-device Foundation Mod
 - **Camera or library:** take a photo or select one with the system photo picker.
 - **Continuous reveal:** shimmer appears only over the selected photo. The background dissolves as the photo and cutout move together into their final framing, while identification runs.
 - **Subject-aware framing:** transparent margins are excluded when fitting the Pokémon and its shadow into the display.
+- **Spoken entries:** optional automatic narration with a low-pitched US-English system voice, a replay/stop button, and voice preview in Settings.
 - **Field journal:** successful identifications and processed images are saved locally.
 - **Secure configuration:** the Photoroom API key is stored in the device’s Keychain.
 
@@ -34,7 +35,7 @@ The app can launch on the minimum deployment target, but image identification an
 1. Open this project in Bitrig.
 2. Build the `Pocket Dex` target using the iOS 27.1 SDK.
 3. Choose iPhone Duo in the built-in simulator and unfold it to see the full interface.
-4. Open Settings using the small gear key or yellow button on the right panel.
+4. Open Settings using the small gear key on the right panel.
 5. Select **On device** or **Photoroom** under Scan processing. For Photoroom, enter your API key and tap **Save key**. Settings also reports whether the local identification model is ready.
 6. Tap the camera button or **PHOTO** to begin a scan.
 
@@ -81,6 +82,14 @@ In Photoroom mode, the subject’s shadow comes from Photoroom. On-device mode i
 
 See the [Photoroom Image Editing guide](https://docs.photoroom.com/image-editing-api-plus-plan/quickstart-guide) and [controllable AI Shadows documentation](https://docs.photoroom.com/image-editing-api-plus-plan/ai-shadows).
 
+## Pokédex narration
+
+Successful discoveries are read aloud by default. Turn **Read new discoveries aloud** off in Settings to disable automatic narration. The yellow speaker button replays the current entry or stops speech. Settings also offers a US-English voice picker and a preview.
+
+Narration uses `AVSpeechSynthesizer` with a measured speaking rate and lowered pitch to evoke the US anime’s electronic Pokédex delivery. It is an approximation using system voices, not the original actor’s voice or a voice clone. Available voices and their sound vary by device. Automatic selection prefers an available male US-English voice; users can select another US-English system voice.
+
+Narration settings persist across launches. Speech stops when starting another scan, choosing another journal entry, opening the camera, or leaving the active app. During playback, other audio is ducked and restored afterward. Speech text is not sent to a third-party voice service.
+
 ## Storage and privacy
 
 - In on-device mode, background removal runs locally with no API key or photo upload.
@@ -101,6 +110,7 @@ See the [Photoroom Image Editing guide](https://docs.photoroom.com/image-editing
 | `App/DisplayPanel.swift` | Scanner LCD and identification labels |
 | `App/ScanReveal.swift` | Photo-only shimmer and continuous photo-to-cutout transition |
 | `App/CutoutFraming.swift` | Visible subject and shadow bounds |
+| `App/DexNarrator.swift` | System speech synthesis, voice preference, and audio session lifecycle |
 | `App/DexModel.swift` | Scan lifecycle, model availability, and journal persistence |
 | `App/BackgroundRemovalMode.swift` | Persisted processing-mode choices |
 | `App/LocalBackgroundRemoval.swift` | On-device Vision masking and transparent PNG export |

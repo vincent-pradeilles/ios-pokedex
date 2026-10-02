@@ -3,6 +3,7 @@ import FoundationModels
 
 @MainActor @Observable
 final class DexModel {
+  var narrator = DexNarrator()
   var entry = DexEntry.empty
   var originalPhoto: UIImage?
   var cutout: UIImage?
@@ -42,6 +43,7 @@ final class DexModel {
     let key = mode == .photoroom ? KeychainStore.read() : ""
     guard mode != .photoroom || !key.isEmpty else { error = "Add your Photoroom API key in Settings before scanning."; return }
     guard #available(iOS 27.0, *), SystemLanguageModel.default.availability == .available else { error = modelStatus; return }
+    narrator.stop()
     originalPhoto = image
     cutout = nil
     entry = DexEntry(name: "Scanning…", number: 0, type: "Unknown", summary: "Isolating your Pokémon. Identification will begin as soon as its background is removed.")
@@ -83,6 +85,7 @@ final class DexModel {
         history.insert(savedEntry, at: 0)
         UserDefaults.standard.set(try JSONEncoder().encode(history), forKey: "entries")
         phase = "New discovery"
+        if narrator.automaticallyNarrates { narrator.narrate(savedEntry) }
       } catch is CancellationError {
         phase = "Scan cancelled"
         entry.name = "Scan cancelled"
@@ -98,6 +101,7 @@ final class DexModel {
   func cancel() { task?.cancel() }
 
   func select(_ item: DexEntry) {
+    narrator.stop()
     originalPhoto = nil
     entry = item
     cutout = item.imageName.flatMap { UIImage(contentsOfFile: Self.storage.appendingPathComponent($0).path) }

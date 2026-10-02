@@ -118,10 +118,19 @@ struct RightHardwarePanel: View {
               Capsule().fill(.red.gradient).frame(width: 29, height: 7)
               Capsule().fill(DexTheme.lime.gradient).frame(width: 29, height: 7)
             }.overlay(Capsule().stroke(.black.opacity(0.3)))
-            Button(action: settings) {
+            Button {
+              if model.narrator.isSpeaking { model.narrator.stop() }
+              else { model.narrator.narrate(model.entry) }
+            } label: {
               Circle().fill(Color(red: 0.98, green: 0.78, blue: 0.12).gradient)
                 .frame(width: 33, height: 33).overlay(Circle().stroke(.black.opacity(0.65), lineWidth: 2))
-            }.accessibilityLabel("Configure Pokédex")
+                .overlay {
+                  Image(systemName: model.narrator.isSpeaking ? "stop.fill" : "speaker.wave.2.fill")
+                    .font(.system(size: 12, weight: .bold)).foregroundStyle(.black.opacity(0.65))
+                }
+                .frame(minWidth: 44, minHeight: 44)
+            }.accessibilityLabel(model.narrator.isSpeaking ? "Stop narration" : "Read Pokémon entry")
+              .disabled(model.entry.number == 0 && !model.narrator.isSpeaking)
           }
         }
         HStack(spacing: 28) {
