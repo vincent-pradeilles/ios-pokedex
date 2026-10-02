@@ -42,6 +42,7 @@ struct SettingsView: View {
         }
         Section {
           Toggle("Read new discoveries aloud", isOn: $model.narrator.automaticallyNarrates)
+          Toggle("Electronic voice effect", isOn: $model.narrator.electronicEffect)
           Picker("US-English voice", selection: $model.narrator.voiceIdentifier) {
             Text("Automatic").tag("")
             ForEach(model.narrator.availableVoices, id: \.identifier) { voice in
@@ -54,7 +55,7 @@ struct SettingsView: View {
             else { model.narrator.preview() }
           }
         } header: { Text("Pokédex voice") } footer: {
-          Text("A low-pitched US-English system voice inspired by the original electronic delivery. This is an approximation, not the anime’s original voice. Tap the yellow speaker button to replay an entry.")
+          Text("A US-English system voice with a radio-style filter and subtle electronic doubling inspired by the reference clip. This is an approximation, not the anime’s original voice. Tap the yellow speaker button to replay an entry.")
         }
         Section("About") {
           LabeledContent("Pocket Dex", value: "1.0")

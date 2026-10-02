@@ -12,7 +12,7 @@ The app identifies Pokémon from photos using Apple’s on-device Foundation Mod
 - **Camera or library:** take a photo or select one with the system photo picker.
 - **Continuous reveal:** shimmer appears only over the selected photo. The background dissolves as the photo and cutout move together into their final framing, while identification runs.
 - **Subject-aware framing:** transparent margins are excluded when fitting the Pokémon and its shadow into the display.
-- **Spoken entries:** optional automatic narration with a low-pitched US-English system voice, a replay/stop button, and voice preview in Settings.
+- **Spoken entries:** optional automatic narration with an electronically treated US-English system voice, a replay/stop button, and voice preview in Settings.
 - **Field journal:** successful identifications and processed images are saved locally.
 - **Secure configuration:** the Photoroom API key is stored in the device’s Keychain.
 
@@ -86,7 +86,7 @@ See the [Photoroom Image Editing guide](https://docs.photoroom.com/image-editing
 
 Successful discoveries are read aloud by default. Turn **Read new discoveries aloud** off in Settings to disable automatic narration. The yellow speaker button replays the current entry or stops speech. Settings also offers a US-English voice picker and a preview.
 
-Narration uses `AVSpeechSynthesizer` with a measured speaking rate and lowered pitch to evoke the US anime’s electronic Pokédex delivery. It is an approximation using system voices, not the original actor’s voice or a voice clone. Available voices and their sound vary by device. Automatic selection prefers an available male US-English voice; users can select another US-English system voice.
+Narration renders `AVSpeechSynthesizer` output to PCM buffers, then plays it through `AVAudioEngine`. A band-limited EQ, restrained radio distortion, and a 9 ms doubling delay evoke the US anime’s electronic Pokédex delivery. The reference-informed preset uses a speech rate of 0.47 and pitch multiplier of 0.94. Toggle **Electronic voice effect** in Settings to compare filtered and unfiltered speech. It is an approximation using system voices, not the original actor’s voice or a voice clone. Available voices and their sound vary by device. Automatic selection prefers an available male US-English voice; users can select another US-English system voice.
 
 Narration settings persist across launches. Speech stops when starting another scan, choosing another journal entry, opening the camera, or leaving the active app. During playback, other audio is ducked and restored afterward. Speech text is not sent to a third-party voice service.
 
@@ -110,7 +110,8 @@ Narration settings persist across launches. Speech stops when starting another s
 | `App/DisplayPanel.swift` | Scanner LCD and identification labels |
 | `App/ScanReveal.swift` | Photo-only shimmer and continuous photo-to-cutout transition |
 | `App/CutoutFraming.swift` | Visible subject and shadow bounds |
-| `App/DexNarrator.swift` | System speech synthesis, voice preference, and audio session lifecycle |
+| `App/DexNarrator.swift` | Speech rendering, voice preference, and audio session lifecycle |
+| `App/DexVoicePlayer.swift` | PCM playback, speaker EQ, radio coloration, and short doubling effect |
 | `App/DexModel.swift` | Scan lifecycle, model availability, and journal persistence |
 | `App/BackgroundRemovalMode.swift` | Persisted processing-mode choices |
 | `App/LocalBackgroundRemoval.swift` | On-device Vision masking and transparent PNG export |
