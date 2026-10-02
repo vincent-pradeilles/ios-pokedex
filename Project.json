@@ -12,12 +12,12 @@
     "CODE_SIGN_IDENTITY": "-"
   },
   "targets": {
-    "New Project": {
+    "Pocket Dex": {
       "deploymentTarget": "26.0",
       "info": {
-        "path": "App\/Info.plist",
+        "path": "App/Info.plist",
         "properties": {
-          "CFBundleDisplayName": "New Project",
+          "CFBundleDisplayName": "Pocket Dex",
           "CFBundleShortVersionString": "1.0",
           "CFBundleVersion": "1",
           "ITSAppUsesNonExemptEncryption": false,
@@ -27,7 +27,8 @@
             "UIInterfaceOrientationPortraitUpsideDown",
             "UIInterfaceOrientationLandscapeLeft",
             "UIInterfaceOrientationLandscapeRight"
-          ]
+          ],
+          "NSCameraUsageDescription": "Take a picture of a Pok\u00e9mon to remove its background and identify it on your iPhone."
         }
       },
       "platform": "iOS",
