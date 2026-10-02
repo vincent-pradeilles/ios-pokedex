@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct SettingsView: View {
-  var model: DexModel
+  @Bindable var model: DexModel
   @State private var apiKey = ""
   @State private var saved = false
   @State private var error: String?
@@ -11,17 +11,29 @@ struct SettingsView: View {
     NavigationStack {
       Form {
         Section {
-          SecureField("Photoroom API key", text: $apiKey)
-            .textContentType(.password).textInputAutocapitalization(.never).autocorrectionDisabled()
-          Button(saved ? "Key saved" : "Save key", systemImage: saved ? "checkmark" : "checkmark") {
-            do {
-              try KeychainStore.save(apiKey.trimmingCharacters(in: .whitespacesAndNewlines))
-              saved = true
-            } catch { self.error = error.localizedDescription }
+          Picker("Background removal", selection: $model.removalMode) {
+            ForEach(BackgroundRemovalMode.allCases) { mode in
+              Text(mode.title).tag(mode)
+            }
+          }.pickerStyle(.segmented)
+            .disabled(model.busy)
+        } header: { Text("Scan processing") } footer: {
+          Text(model.removalMode.explanation)
+        }
+        if model.removalMode == .photoroom {
+          Section {
+            SecureField("Photoroom API key", text: $apiKey)
+              .textContentType(.password).textInputAutocapitalization(.never).autocorrectionDisabled()
+            Button(saved ? "Key saved" : "Save key", systemImage: "checkmark") {
+              do {
+                try KeychainStore.save(apiKey.trimmingCharacters(in: .whitespacesAndNewlines))
+                saved = true
+              } catch { self.error = error.localizedDescription }
+            }
+            Link("Photoroom API dashboard", destination: URL(string: "https://app.photoroom.com/api-dashboard")!)
+          } header: { Text("Photoroom & AI Shadows") } footer: {
+            Text("Your key is stored securely in this iPhone’s Keychain. Clear the field and save to remove it. Each scan sends your selected photo to Photoroom for background removal and a soft AI shadow. This uses the Image Editing API (Plus plan) and its credits.")
           }
-          Link("Photoroom API dashboard", destination: URL(string: "https://app.photoroom.com/api-dashboard")!)
-        } header: { Text("Photoroom & AI Shadows") } footer: {
-          Text("Your key is stored securely in this iPhone’s Keychain. Clear the field and save to remove it. Each scan sends your selected photo to Photoroom for background removal and a soft AI shadow. This uses the Image Editing API (Plus plan) and its credits.")
         }
         Section("On-device identification") {
           Label(model.modelStatus, systemImage: "viewfinder")

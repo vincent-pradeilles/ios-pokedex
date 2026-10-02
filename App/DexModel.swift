@@ -12,9 +12,16 @@ final class DexModel {
   var busy = false
   var error: String?
   var task: Task<Void, Never>?
+  var removalMode: BackgroundRemovalMode {
+    didSet { UserDefaults.standard.set(removalMode.rawValue, forKey: "backgroundRemovalMode") }
+  }
   private let service = ScanService()
+  private let localRemoval = LocalBackgroundRemoval()
 
   init() {
+    let storedMode = UserDefaults.standard.string(forKey: "backgroundRemovalMode")
+    removalMode = storedMode.flatMap(BackgroundRemovalMode.init(rawValue:))
+      ?? (KeychainStore.read().isEmpty ? .onDevice : .photoroom)
     if let data = UserDefaults.standard.data(forKey: "entries"),
        let entries = try? JSONDecoder().decode([DexEntry].self, from: data) { history = entries }
   }
@@ -31,12 +38,14 @@ final class DexModel {
 
   func scan(_ image: UIImage) {
     guard !busy else { return }
-    let key = KeychainStore.read()
-    guard !key.isEmpty else { error = "Add your Photoroom API key in Settings before scanning."; return }
+    let mode = removalMode
+    let key = mode == .photoroom ? KeychainStore.read() : ""
+    guard mode != .photoroom || !key.isEmpty else { error = "Add your Photoroom API key in Settings before scanning."; return }
     guard #available(iOS 27.0, *), SystemLanguageModel.default.availability == .available else { error = modelStatus; return }
     originalPhoto = image
     cutout = nil
     entry = DexEntry(name: "Scanning…", number: 0, type: "Unknown", summary: "Isolating your Pokémon. Identification will begin as soon as its background is removed.")
+    entry.removalMode = mode
     busy = true
     phase = "Scanning…"
     task = Task {
@@ -46,7 +55,13 @@ final class DexModel {
         let size = CGSize(width: image.size.width * scale, height: image.size.height * scale)
         let normalized = UIGraphicsImageRenderer(size: size).image { _ in image.draw(in: CGRect(origin: .zero, size: size)) }
         guard let data = normalized.jpegData(compressionQuality: 0.9) else { throw DexError.message("Couldn’t prepare this picture.") }
-        let result = try await service.prepareCutout(image: data, key: key)
+        let result: Data
+        switch mode {
+        case .onDevice:
+          result = try await localRemoval.process(data)
+        case .photoroom:
+          result = try await service.prepareCutout(image: data, key: key)
+        }
         try Task.checkCancellation()
         // Publish the cutout before awaiting identification so the reveal and local inference overlap.
         let preparedImage = UIImage(data: result)
@@ -58,7 +73,7 @@ final class DexModel {
         let identity = try await service.identify(result)
         try Task.checkCancellation()
         guard identity.recognized, identity.number > 0 else { throw DexError.message("No confident match. Try one Pokémon, well lit and filling the picture.") }
-        let newEntry = DexEntry(name: identity.name, number: identity.number, type: identity.type, summary: identity.summary)
+        let newEntry = DexEntry(name: identity.name, number: identity.number, type: identity.type, summary: identity.summary, removalMode: mode)
         let file = newEntry.id.uuidString + ".png"
         try result.write(to: Self.storage.appendingPathComponent(file), options: .atomic)
         var savedEntry = newEntry

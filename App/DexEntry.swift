@@ -9,6 +9,8 @@ struct DexEntry: Codable, Identifiable {
   var summary: String
   var imageName: String?
   var isSample = false
+  // Optional for compatibility with discoveries saved before mode selection.
+  var removalMode: BackgroundRemovalMode?
 
   static let empty = DexEntry(name: "Ready to scan", number: 0, type: "—", summary: "No Pokémon scanned yet.\n\nTake a picture or choose a photo to begin your next discovery.")
 

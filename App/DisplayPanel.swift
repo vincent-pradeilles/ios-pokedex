@@ -26,7 +26,7 @@ struct DisplayPanel: View {
         ZStack {
           GridPattern().stroke(DexTheme.ink.opacity(0.065), lineWidth: 0.5)
           if originalPhoto != nil || image != nil {
-            ScanReveal(original: originalPhoto, cutout: image, subjectBounds: subjectBounds, removing: busy && image == nil)
+            ScanReveal(original: originalPhoto, cutout: image, subjectBounds: subjectBounds, artificialShadow: entry.removalMode == .onDevice, removing: busy && image == nil)
           } else {
             Image(systemName: "viewfinder").font(.system(size: 75)).opacity(0.4)
           }

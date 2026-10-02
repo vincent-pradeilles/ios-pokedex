@@ -6,6 +6,7 @@ struct ScanReveal: View {
   var original: UIImage?
   var cutout: UIImage?
   var subjectBounds: CGRect
+  var artificialShadow: Bool
   var removing: Bool
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @State private var progress: CGFloat = 0
@@ -23,6 +24,17 @@ struct ScanReveal: View {
       let scale = 1 + (targetScale - 1) * movement
 
       ZStack {
+        if artificialShadow && cutout != nil {
+          Ellipse()
+            .fill(Color.black.opacity(0.14))
+            .frame(width: width * subjectBounds.width * 0.72,
+                   height: max(2, height * subjectBounds.height * 0.07))
+            .blur(radius: 2 / max(1, targetScale))
+            .position(x: width * subjectBounds.midX,
+                      y: height * subjectBounds.maxY - height * subjectBounds.height * 0.025)
+            .opacity(progress)
+            .accessibilityHidden(true)
+        }
         if let cutout {
           Image(uiImage: cutout).resizable().scaledToFit()
             .frame(width: width, height: height)
