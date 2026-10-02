@@ -3,7 +3,7 @@ import FoundationModels
 
 @MainActor @Observable
 final class DexModel {
-  var entry = DexEntry.sample
+  var entry = DexEntry.empty
   var originalPhoto: UIImage?
   var cutout: UIImage?
   var history: [DexEntry] = []
@@ -37,7 +37,7 @@ final class DexModel {
     cutout = nil
     entry = DexEntry(name: "Scanning…", number: 0, type: "Unknown", summary: "Isolating your Pokémon. Identification will begin as soon as its background is removed.")
     busy = true
-    phase = "Removing background…"
+    phase = "Preparing cutout and shadow…"
     task = Task {
       defer { busy = false; task = nil }
       do {
@@ -45,7 +45,7 @@ final class DexModel {
         let size = CGSize(width: image.size.width * scale, height: image.size.height * scale)
         let normalized = UIGraphicsImageRenderer(size: size).image { _ in image.draw(in: CGRect(origin: .zero, size: size)) }
         guard let data = normalized.jpegData(compressionQuality: 0.9) else { throw DexError.message("Couldn’t prepare this picture.") }
-        let result = try await service.removeBackground(image: data, key: key)
+        let result = try await service.prepareCutout(image: data, key: key)
         try Task.checkCancellation()
         // Publish the cutout before awaiting identification so the reveal and local inference overlap.
         cutout = UIImage(data: result)

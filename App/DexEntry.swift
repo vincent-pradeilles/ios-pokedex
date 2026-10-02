@@ -10,7 +10,8 @@ struct DexEntry: Codable, Identifiable {
   var imageName: String?
   var isSample = false
 
-  static let sample = DexEntry(name: "Pikachu", number: 25, type: "Electric", summary: "It stores electricity in the pouches on its cheeks. When it’s excited, tiny sparks crackle from its cheeks.", imageName: "pikachu", isSample: true)
+  static let empty = DexEntry(name: "Ready to scan", number: 0, type: "—", summary: "No Pokémon scanned yet.\n\nTake a picture or choose a photo to begin your next discovery.")
+
 }
 
 @available(iOS 27.0, *)

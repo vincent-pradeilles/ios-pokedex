@@ -34,7 +34,7 @@ struct ScanReveal: View {
           }
           VStack {
             Spacer()
-            Label("Isolating subject…", systemImage: "viewfinder")
+            Label("Preparing cutout…", systemImage: "viewfinder")
               .font(.system(size: 10, weight: .medium, design: .monospaced))
               .padding(7).foregroundStyle(.white)
               .background(.black.opacity(0.65), in: Capsule())
@@ -42,7 +42,7 @@ struct ScanReveal: View {
         }
       }
       .frame(width: proxy.size.width, height: proxy.size.height)
-      .scaleEffect(cutout == nil ? 1 : 0.86)
+      .scaleEffect(cutout == nil ? 1 : 0.98)
       .offset(y: cutout == nil ? -4 : 0)
       .animation(reduceMotion ? nil : .spring(duration: 1.05, bounce: 0.13), value: cutout != nil)
       .clipped()

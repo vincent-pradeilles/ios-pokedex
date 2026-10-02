@@ -20,8 +20,8 @@ struct SettingsView: View {
             } catch { self.error = error.localizedDescription }
           }
           Link("Photoroom API dashboard", destination: URL(string: "https://app.photoroom.com/api-dashboard")!)
-        } header: { Text("Background removal") } footer: {
-          Text("Your key is stored securely in this iPhone’s Keychain. Clear the field and save to remove it. Each scan sends your selected photo to Photoroom and uses your API account’s credits.")
+        } header: { Text("Photoroom & AI Shadows") } footer: {
+          Text("Your key is stored securely in this iPhone’s Keychain. Clear the field and save to remove it. Each scan sends your selected photo to Photoroom for background removal and a soft AI shadow. This uses the Image Editing API (Plus plan) and its credits.")
         }
         Section("On-device identification") {
           Label(model.modelStatus, systemImage: "viewfinder")
@@ -30,7 +30,7 @@ struct SettingsView: View {
         }
         Section("About") {
           LabeledContent("Pocket Dex", value: "1.0")
-          Text("An independent fan project. Pokémon and Pokémon character names are trademarks of Nintendo, Creatures, and GAME FREAK. Sample artwork provided through PokeAPI.")
+          Text("An independent fan project. Pokémon and Pokémon character names are trademarks of Nintendo, Creatures, and GAME FREAK.")
             .font(.footnote).foregroundStyle(.secondary)
         }
       }

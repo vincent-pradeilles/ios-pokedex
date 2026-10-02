@@ -5,9 +5,12 @@ struct HardwareFit<Content: View>: View {
   @ViewBuilder var content: () -> Content
   var body: some View {
     GeometryReader { proxy in
+      // Preserve circular controls while allowing the casing and displays to
+      // expand independently to the aspect ratio of each half of Duo.
+      let scale = max(0.1, min(1, proxy.size.width / 340, proxy.size.height / 700))
       content()
-        .frame(width: 340, height: 700)
-        .scaleEffect(min(proxy.size.width / 340, proxy.size.height / 700))
+        .frame(width: proxy.size.width / scale, height: proxy.size.height / scale)
+        .scaleEffect(scale)
         .frame(width: proxy.size.width, height: proxy.size.height)
     }
   }
@@ -38,7 +41,7 @@ struct LeftHardwarePanel: View {
           VStack(alignment: .leading, spacing: 6) {
             Text(model.busy ? "SCANNING…" : "POKÉDEX READY")
             Text("FOUND  \(model.history.count.formatted(.number.precision(.integerLength(3))))")
-            Text(model.entry.isSample ? "DEMO / No. 025" : "LOCAL AI MATCH")
+            Text(model.entry.number > 0 ? "LOCAL AI MATCH" : "AWAITING SCAN")
           }.font(.system(size: 10, weight: .medium, design: .monospaced))
             .foregroundStyle(Color(red: 0.18, green: 0.30, blue: 0.07))
             .frame(width: 138, height: 65, alignment: .leading).padding(.leading, 12)
@@ -83,7 +86,7 @@ struct RightHardwarePanel: View {
             Text(model.entry.summary).font(.system(size: 15, weight: .medium, design: .monospaced)).lineSpacing(3)
               .lineLimit(7)
             Spacer(minLength: 0)
-            Text(model.entry.isSample ? "SAMPLE ENTRY" : "ON-DEVICE AI • TAP FOR DETAILS")
+            Text(model.entry.number > 0 ? "ON-DEVICE AI • TAP FOR DETAILS" : "CAMERA OR PHOTO TO BEGIN")
               .font(.system(size: 8, design: .monospaced)).foregroundStyle(.white.opacity(0.45))
           }.foregroundStyle(Color(white: 0.91)).padding(16)
             .frame(maxWidth: .infinity, alignment: .leading).frame(height: 188)
@@ -123,7 +126,7 @@ struct RightHardwarePanel: View {
         }
         HStack(spacing: 28) {
           Text(model.entry.type.uppercased()).frame(maxWidth: .infinity)
-          Text(String(format: "No. %03d", model.entry.number)).frame(maxWidth: .infinity)
+          Text(model.entry.number > 0 ? String(format: "No. %03d", model.entry.number) : "No. ———").frame(maxWidth: .infinity)
         }.font(.system(size: 10, weight: .semibold, design: .monospaced)).foregroundStyle(.white.opacity(0.85))
           .padding(.vertical, 12)
           .background(Color(white: 0.035), in: RoundedRectangle(cornerRadius: 4))
@@ -138,7 +141,7 @@ struct RightHardwarePanel: View {
           VStack(alignment: .leading, spacing: 20) {
             Text(model.entry.type).font(.headline).foregroundStyle(.secondary)
             Text(model.entry.summary).font(.title3)
-            Text(model.entry.isSample ? "Sample entry" : "Generated on device. AI identification and notes can be inaccurate.").font(.footnote).foregroundStyle(.secondary)
+            Text(model.entry.number > 0 ? "Generated on device. AI identification and notes can be inaccurate." : "Choose a photo or use the camera to begin. Background removal uses Photoroom; identification happens on your iPhone.").font(.footnote).foregroundStyle(.secondary)
           }.padding(24).frame(maxWidth: .infinity, alignment: .leading)
         }.navigationTitle(model.entry.name)
           .toolbar { Button("Done", systemImage: "checkmark") { notes = false } }

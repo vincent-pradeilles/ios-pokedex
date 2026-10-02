@@ -8,11 +8,7 @@ struct DisplayPanel: View {
   var busy: Bool
   var phase: String
 
-  private var artwork: UIImage? {
-    if let image { return image }
-    if entry.isSample, let url = Bundle.main.url(forResource: "pikachu", withExtension: "png") { return UIImage(contentsOfFile: url.path) }
-    return nil
-  }
+  private var isEmpty: Bool { entry.number == 0 && originalPhoto == nil && image == nil && !busy }
 
   var body: some View {
     VStack(spacing: 10) {
@@ -24,20 +20,18 @@ struct DisplayPanel: View {
         HStack {
           Text(entry.number > 0 ? String(format: "No. %03d", entry.number) : "No. ———")
           Spacer()
-          Text(busy ? "SCANNING" : entry.isSample ? "SAMPLE ENTRY" : entry.number > 0 ? "AI MATCH" : "NO MATCH")
+          Text(busy ? "SCANNING" : isEmpty ? "AWAITING SCAN" : entry.number > 0 ? "AI MATCH" : "NO MATCH")
         }.font(.system(.caption2, design: .monospaced, weight: .medium))
         ZStack {
           GridPattern().stroke(DexTheme.ink.opacity(0.065), lineWidth: 0.5)
-          Ellipse().fill(DexTheme.ink.opacity(0.10)).frame(width: 130, height: 20).offset(y: 80)
           if originalPhoto != nil {
             ScanReveal(original: originalPhoto, cutout: image, removing: busy && image == nil)
-          } else if let artwork {
-            Image(uiImage: artwork).resizable().scaledToFit().padding(10)
-              .shadow(color: .black.opacity(0.1), radius: 6, y: 6)
+          } else if let image {
+            Image(uiImage: image).resizable().scaledToFit().padding(10)
           } else {
             Image(systemName: "viewfinder").font(.system(size: 75)).opacity(0.4)
           }
-        }.frame(height: 150)
+        }.frame(height: 165)
         HStack(alignment: .firstTextBaseline) {
           Text(entry.name).font(.system(.title2, design: .rounded, weight: .heavy))
           Spacer()

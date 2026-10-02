@@ -15,27 +15,26 @@ struct ContentView: View {
     NavigationStack {
       GeometryReader { geometry in
         let wide = sizeClass == .regular && geometry.size.width > 580
-        VStack(spacing: 0) {
+        Group {
           if wide {
             if #available(iOS 27.1, *) {
-              ArrangementView {
+              DuoHardwareLayout {
                 mainPanel
-              } secondary: {
+              } right: {
                 rightPanel
               }
-              .arrangementViewStyle(.split.axes(.horizontal))
-              .background { HingeSpine().frame(width: 22).padding(.vertical, 55) }
             } else {
-              HStack(spacing: 8) { mainPanel; rightPanel }
+              HStack(spacing: 0) { mainPanel; rightPanel }
             }
           } else {
             ReplicaCover()
           }
         }
-        .padding(.horizontal, 8)
-        .padding(.bottom, 8)
-        .animation(reduceMotion ? nil : .smooth, value: wide)
       }
+      .ignoresSafeArea()
+      .statusBarHidden()
+      .persistentSystemOverlays(.hidden)
+      .modifier(ImmersiveHardwarePresentation())
       .background(DexTheme.shell.ignoresSafeArea())
       .sheet(isPresented: $settings) { SettingsView(model: model) }
       .sheet(isPresented: $journal) { JournalView(model: model) }
