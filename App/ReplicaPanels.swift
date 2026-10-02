@@ -26,7 +26,7 @@ struct LeftHardwarePanel: View {
     VStack(spacing: 0) {
       ReplicaSensor()
       VStack(spacing: 16) {
-        DisplayPanel(entry: model.entry, image: model.cutout, originalPhoto: model.originalPhoto, busy: model.busy, phase: model.phase)
+        DisplayPanel(entry: model.entry, image: model.cutout, originalPhoto: model.originalPhoto, subjectBounds: model.subjectBounds, busy: model.busy, phase: model.phase)
         HStack(spacing: 13) {
           Button(action: camera) {
             Circle().fill(Color(white: 0.10).gradient).frame(width: 42, height: 42)

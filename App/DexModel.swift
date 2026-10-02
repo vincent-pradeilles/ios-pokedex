@@ -6,6 +6,7 @@ final class DexModel {
   var entry = DexEntry.empty
   var originalPhoto: UIImage?
   var cutout: UIImage?
+  var subjectBounds = CGRect(x: 0, y: 0, width: 1, height: 1)
   var history: [DexEntry] = []
   var phase = "Ready to explore"
   var busy = false
@@ -37,7 +38,7 @@ final class DexModel {
     cutout = nil
     entry = DexEntry(name: "Scanning…", number: 0, type: "Unknown", summary: "Isolating your Pokémon. Identification will begin as soon as its background is removed.")
     busy = true
-    phase = "Preparing cutout and shadow…"
+    phase = "Scanning…"
     task = Task {
       defer { busy = false; task = nil }
       do {
@@ -48,7 +49,9 @@ final class DexModel {
         let result = try await service.prepareCutout(image: data, key: key)
         try Task.checkCancellation()
         // Publish the cutout before awaiting identification so the reveal and local inference overlap.
-        cutout = UIImage(data: result)
+        let preparedImage = UIImage(data: result)
+        subjectBounds = CutoutFraming.visibleBounds(of: preparedImage)
+        cutout = preparedImage
         entry.name = "Identifying…"
         entry.summary = "Background removed. Your iPhone is identifying this Pokémon while it settles into the display."
         phase = "Identifying on your iPhone…"
@@ -83,6 +86,7 @@ final class DexModel {
     originalPhoto = nil
     entry = item
     cutout = item.imageName.flatMap { UIImage(contentsOfFile: Self.storage.appendingPathComponent($0).path) }
+    subjectBounds = CutoutFraming.visibleBounds(of: cutout)
     phase = "Saved discovery"
   }
 

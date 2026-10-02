@@ -4,6 +4,7 @@ struct DisplayPanel: View {
   var entry: DexEntry
   var image: UIImage?
   var originalPhoto: UIImage?
+  var subjectBounds: CGRect
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   var busy: Bool
   var phase: String
@@ -24,14 +25,12 @@ struct DisplayPanel: View {
         }.font(.system(.caption2, design: .monospaced, weight: .medium))
         ZStack {
           GridPattern().stroke(DexTheme.ink.opacity(0.065), lineWidth: 0.5)
-          if originalPhoto != nil {
-            ScanReveal(original: originalPhoto, cutout: image, removing: busy && image == nil)
-          } else if let image {
-            Image(uiImage: image).resizable().scaledToFit().padding(10)
+          if originalPhoto != nil || image != nil {
+            ScanReveal(original: originalPhoto, cutout: image, subjectBounds: subjectBounds, removing: busy && image == nil)
           } else {
             Image(systemName: "viewfinder").font(.system(size: 75)).opacity(0.4)
           }
-        }.frame(height: 165)
+        }.frame(height: 225)
         HStack(alignment: .firstTextBaseline) {
           Text(entry.name).font(.system(.title2, design: .rounded, weight: .heavy))
           Spacer()
@@ -41,7 +40,7 @@ struct DisplayPanel: View {
         }
       }
       .foregroundStyle(DexTheme.ink)
-      .padding(14)
+      .padding(7)
       .background(Color(red: 0.80, green: 0.87, blue: 0.79))
       .clipShape(RoundedRectangle(cornerRadius: 7))
       .overlay(RoundedRectangle(cornerRadius: 7).stroke(Color(white: 0.09), lineWidth: 6))
