@@ -7,30 +7,33 @@ struct PokemonCardImage: View {
   @State private var loading = false
 
   var body: some View {
-    Group {
-      if entry == nil {
-        Image("pokemon-\(number)")
-          .renderingMode(.template)
-          .resizable()
-          .interpolation(.none)
-          .scaledToFit()
-          .foregroundStyle(.black)
-      } else if let thumbnail {
-        Image(uiImage: thumbnail)
-          .resizable()
-          .scaledToFit()
-      } else if loading {
-        ProgressView().tint(.black)
-      } else {
-        Text("Image unavailable")
-          .font(.caption)
-          .multilineTextAlignment(.center)
-          .foregroundStyle(.black)
+    GeometryReader { geometry in
+      Group {
+        if entry == nil {
+          Image("pokemon-\(number)")
+            .renderingMode(.template)
+            .resizable()
+            .interpolation(.none)
+            .scaledToFit()
+            .foregroundStyle(.black)
+            .frame(width: 96, height: 96)
+        } else if let thumbnail {
+          Image(uiImage: thumbnail)
+            .resizable()
+            .scaledToFit()
+            .frame(width: geometry.size.width * 0.9, height: geometry.size.height * 0.9)
+        } else if loading {
+          ProgressView().tint(.black)
+        } else {
+          Text("Image unavailable")
+            .font(.caption)
+            .multilineTextAlignment(.center)
+            .foregroundStyle(.black)
+        }
       }
+      .frame(width: geometry.size.width, height: geometry.size.height)
     }
-    .frame(width: 96, height: 96)
-    .frame(maxWidth: .infinity)
-    .padding(.vertical, 8)
+    .aspectRatio(1, contentMode: .fit)
     .background(Color(red: 0.82, green: 0.88, blue: 0.77), in: RoundedRectangle(cornerRadius: 12))
     .accessibilityHidden(true)
     .task(id: entry?.imageName) {

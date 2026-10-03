@@ -30,7 +30,13 @@ enum ScanImageStore {
               kCGImageSourceThumbnailMaxPixelSize: 320,
               kCGImageSourceShouldCacheImmediately: true
             ] as CFDictionary) else { return nil }
-      return UIImage(cgImage: image)
+      // Trim transparent canvas so card padding is measured around the actual subject.
+      let bounds = CutoutFraming.visibleBounds(of: UIImage(cgImage: image))
+      let rect = CGRect(x: bounds.minX * CGFloat(image.width),
+                        y: bounds.minY * CGFloat(image.height),
+                        width: bounds.width * CGFloat(image.width),
+                        height: bounds.height * CGFloat(image.height)).integral
+      return UIImage(cgImage: image.cropping(to: rect) ?? image)
     }.value
   }
 }
