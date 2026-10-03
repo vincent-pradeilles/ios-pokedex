@@ -40,7 +40,7 @@ struct LeftHardwarePanel: View {
         HStack(alignment: .center, spacing: 20) {
           VStack(alignment: .leading, spacing: 6) {
             Text(model.busy ? "SCANNING…" : "POKÉDEX READY")
-            Text("FOUND  \(model.trackedSpecies.count.formatted(.number.precision(.integerLength(3))))")
+            Text("FOUND  \(model.capturedSpecies.count.formatted(.number.precision(.integerLength(3))))")
             Text(model.entry.number > 0 ? "LOCAL AI MATCH" : "AWAITING SCAN")
           }.font(.system(size: 10, weight: .medium, design: .monospaced))
             .foregroundStyle(Color(red: 0.18, green: 0.30, blue: 0.07))

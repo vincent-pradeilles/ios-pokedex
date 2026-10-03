@@ -27,7 +27,7 @@ final class DexModel {
        let entries = try? JSONDecoder().decode([DexEntry].self, from: data) { history = entries }
   }
 
-  var trackedSpecies: Set<Int> {
+  var capturedSpecies: Set<Int> {
     Set(history.filter { !$0.isSample && (1...386).contains($0.number) }.map(\.number))
   }
 

@@ -4,20 +4,20 @@ struct JournalView: View {
   var model: DexModel
   @Environment(\.dismiss) private var dismiss
   @State private var generation = 0
-  @State private var filter: TrackingFilter = .all
+  @State private var filter: CaptureFilter = .all
   @State private var query = ""
   @Environment(\.dynamicTypeSize) private var typeSize
 
   var body: some View {
     let scans = model.latestScans
-    let tracked = model.trackedSpecies
+    let captured = model.capturedSpecies
     let species = PokemonSpecies.all.filter {
       (generation == 0 || $0.generation == generation)
     }
     let visible = species.filter { pokemon in
-      let found = tracked.contains(pokemon.number)
+      let found = captured.contains(pokemon.number)
       let search = query.trimmingCharacters(in: .whitespacesAndNewlines)
-      return (filter == .all || (filter == .tracked ? found : !found)) &&
+      return (filter == .all || (filter == .captured ? found : !found)) &&
         (search.isEmpty || String(format: "%03d", pokemon.number).contains(search.replacingOccurrences(of: "#", with: "")) ||
          (found && pokemon.name.localizedStandardContains(search)))
     }
@@ -27,8 +27,8 @@ struct JournalView: View {
           Section {
             VStack(alignment: .leading, spacing: 12) {
               Text("NATIONAL POKÉDEX").font(.caption.monospaced()).foregroundStyle(.secondary)
-              Text("\(tracked.count) / 386 tracked").font(.title2.bold()).monospacedDigit()
-              ProgressView(value: Double(tracked.count), total: 386)
+              Text("\(captured.count) / 386 captured").font(.title2.bold()).monospacedDigit()
+              ProgressView(value: Double(captured.count), total: 386)
                 .accessibilityLabel("National Pokédex completion")
               Text("Generations I–III • Kanto, Johto & Hoenn").font(.subheadline).foregroundStyle(.secondary)
             }.padding(.vertical, 8)
@@ -39,10 +39,10 @@ struct JournalView: View {
               Text("III · Hoenn").tag(3)
             }
             Picker("Show", selection: $filter) {
-              ForEach(TrackingFilter.allCases) { Text($0.rawValue).tag($0) }
+              ForEach(CaptureFilter.allCases) { Text($0.rawValue).tag($0) }
             }
           } footer: {
-            Text("Unscanned entries appear as silhouettes with hidden names. Scan a Pokémon to reveal it. Search by number or a tracked name.")
+            Text("Unknown entries appear as silhouettes with hidden names. Scan a Pokémon to reveal it. Search by number or a captured Pokémon’s name.")
           }
           Section {
             LazyVGrid(columns: [GridItem(.adaptive(minimum: typeSize.isAccessibilitySize ? 240 : 140), spacing: 12)], spacing: 12) {
@@ -58,13 +58,13 @@ struct JournalView: View {
                 .foregroundStyle(.secondary).padding(.vertical)
             }
           } header: {
-            Text("\(species.filter { tracked.contains($0.number) }.count) of \(species.count) tracked · \(visible.count) shown")
+            Text("\(species.filter { captured.contains($0.number) }.count) of \(species.count) captured · \(visible.count) shown")
           }
         }.padding().frame(maxWidth: .infinity, alignment: .leading)
       }
       .background(Color(uiColor: .systemGroupedBackground))
       .navigationTitle("Pokédex")
-      .searchable(text: $query, prompt: "Pokédex number or tracked name")
+      .searchable(text: $query, prompt: "Pokédex number or captured Pokémon’s name")
       .toolbar {
         ToolbarItem(placement: .confirmationAction) {
           Button("Done", systemImage: "checkmark") { dismiss() }
@@ -74,10 +74,10 @@ struct JournalView: View {
   }
 }
 
-private enum TrackingFilter: String, CaseIterable, Identifiable {
+private enum CaptureFilter: String, CaseIterable, Identifiable {
   case all = "All Pokémon"
-  case tracked = "Tracked"
-  case unscanned = "Not scanned"
+  case captured = "Captured"
+  case unknown = "Unknown"
   var id: Self { self }
 }
 
@@ -100,7 +100,7 @@ private struct PokemonCatalogCard: View {
           .lineLimit(2, reservesSpace: true)
           .multilineTextAlignment(.center)
           .foregroundStyle(.primary)
-        Text(entry == nil ? "Not scanned" : "Tracked")
+        Text(entry == nil ? "Unknown" : "Captured")
           .font(.caption.weight(.medium)).foregroundStyle(.secondary)
       }
       .padding(12)
@@ -114,7 +114,7 @@ private struct PokemonCatalogCard: View {
     .buttonStyle(.plain)
     .disabled(entry == nil || busy)
     .accessibilityElement(children: .ignore)
-    .accessibilityLabel(entry == nil ? "Number \(species.number), not scanned" : "Number \(species.number), \(species.name), tracked")
+    .accessibilityLabel(entry == nil ? "Number \(species.number), unknown" : "Number \(species.number), \(species.name), captured")
     .accessibilityHint(entry == nil ? "Scan this Pokémon to reveal its entry" : "Opens your latest saved scan")
   }
 }
