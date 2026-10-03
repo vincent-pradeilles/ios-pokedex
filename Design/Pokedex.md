@@ -18,8 +18,13 @@ https://github.com/PokeAPI/sprites/tree/master/sprites/pokemon/versions/generati
 
 Pokémon and Pokémon character names are trademarks of Nintendo. Sprite artwork belongs to its respective owners, including Nintendo, Game Freak, and The Pokémon Company.
 
-At the user’s request, the adaptive card grid displays unscanned sprites as solid black alpha-mask silhouettes on a pale green screen. Tracked entries use the original full-color sprite. Nearest-neighbor interpolation preserves the Game Boy Advance pixel art. This silhouette treatment is an intentional adaptation rather than an exact Emerald screen reproduction.
+At the user’s request, the adaptive card grid displays unscanned sprites as solid black alpha-mask silhouettes on a pale green screen. Tracked entries use the latest persisted background-removed scan image. Nearest-neighbor interpolation preserves the Game Boy Advance pixel art. This silhouette treatment is an intentional adaptation rather than an exact Emerald screen reproduction.
 
 Sprites are registered as named image sets in Assets.xcassets so SwiftUI image lookup resolves compiled assets reliably. Each 64 × 64 sprite is declared at 1× scale.
 
 The standalone Scan history section has been removed. Saved scan data remains persisted and tracked cards still open the latest scan.
+
+
+## Persisted scan images
+
+ScanImageStore writes each successful cutout as an atomic PNG to Documents/Scans/<entry UUID>.png, retaining alpha transparency. The entry's imageName is stored with the existing persisted history. The directory and filenames are unchanged, so previous scans remain compatible. Both the full entry and the Pokédex cards load from this shared store after relaunch. Cards asynchronously downsample to 320 pixels instead of decoding every original at full size. A missing or damaged file displays “Image unavailable” without discarding tracked progress.
