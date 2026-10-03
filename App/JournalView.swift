@@ -66,8 +66,16 @@ struct JournalView: View {
       }
       .background(Color(uiColor: .systemGroupedBackground))
       .navigationTitle("Pokédex")
+      .navigationBarTitleDisplayMode(.inline)
       .searchable(text: $query, prompt: "Pokédex number or captured Pokémon’s name")
       .toolbar {
+        ToolbarItem(placement: .principal) {
+          Text("Pokédex")
+            .font(.largeTitle.bold())
+            .lineLimit(1)
+            .minimumScaleFactor(0.75)
+            .accessibilityAddTraits(.isHeader)
+        }
         ToolbarItem(placement: .confirmationAction) {
           Button("Done", systemImage: "checkmark") { dismiss() }
         }
