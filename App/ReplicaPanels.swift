@@ -48,7 +48,7 @@ struct LeftHardwarePanel: View {
             .background(DexTheme.lime.gradient, in: RoundedRectangle(cornerRadius: 7))
             .overlay(RoundedRectangle(cornerRadius: 7).stroke(.black.opacity(0.4), lineWidth: 2))
           Spacer(minLength: 0)
-          Button(action: journal) { DPad() }.accessibilityLabel("Open Pokédex and scan history")
+          Button(action: journal) { DPad() }.accessibilityLabel("Open Pokédex")
         }
       }.padding(.horizontal, 23).padding(.top, 14)
       Spacer(minLength: 0)
@@ -109,7 +109,7 @@ struct RightHardwarePanel: View {
         }.padding(3).background(.black.opacity(0.55), in: RoundedRectangle(cornerRadius: 5))
         HStack(alignment: .top) {
           HStack(spacing: 2) {
-            Button(action: journal) { hardwareKey("book.closed.fill") }.accessibilityLabel("Pokédex and scan history")
+            Button(action: journal) { hardwareKey("book.closed.fill") }.accessibilityLabel("Pokédex")
             Button(action: settings) { hardwareKey("gearshape") }.accessibilityLabel("Settings")
           }
           Spacer()

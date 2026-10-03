@@ -3,7 +3,6 @@ import SwiftUI
 struct JournalView: View {
   var model: DexModel
   @Environment(\.dismiss) private var dismiss
-  @State private var page: JournalPage = .pokedex
   @State private var generation = 0
   @State private var filter: TrackingFilter = .all
   @State private var query = ""
@@ -25,12 +24,6 @@ struct JournalView: View {
     NavigationStack {
       ScrollView {
         VStack(alignment: .leading, spacing: 20) {
-        Section {
-          Picker("Journal section", selection: $page) {
-            ForEach(JournalPage.allCases) { Text($0.rawValue).tag($0) }
-          }.pickerStyle(.segmented)
-        }
-        if page == .pokedex {
           Section {
             VStack(alignment: .leading, spacing: 12) {
               Text("NATIONAL POKÉDEX").font(.caption.monospaced()).foregroundStyle(.secondary)
@@ -67,28 +60,10 @@ struct JournalView: View {
           } header: {
             Text("\(species.filter { tracked.contains($0.number) }.count) of \(species.count) tracked · \(visible.count) shown")
           }
-        } else {
-          Section("Saved scans · \(model.history.count)") {
-            if model.history.isEmpty {
-              Text("Scan a Pokémon to save your first discovery.").foregroundStyle(.secondary)
-            }
-            ForEach(model.history.filter { query.isEmpty || $0.name.localizedStandardContains(query) || String(format: "%03d", $0.number).contains(query.replacingOccurrences(of: "#", with: "")) }) { entry in
-              Button {
-                model.select(entry)
-                dismiss()
-              } label: {
-                VStack(alignment: .leading, spacing: 4) {
-                  Text(String(format: "#%03d  %@", entry.number, entry.name)).font(.body.monospaced())
-                  Text(entry.type).font(.caption).foregroundStyle(.secondary)
-                }.foregroundStyle(.primary).padding(.vertical, 6)
-              }.disabled(model.busy)
-            }
-          }
-        }
         }.padding().frame(maxWidth: .infinity, alignment: .leading)
       }
       .background(Color(uiColor: .systemGroupedBackground))
-      .navigationTitle("Field journal")
+      .navigationTitle("Pokédex")
       .searchable(text: $query, prompt: "Pokédex number or tracked name")
       .toolbar {
         ToolbarItem(placement: .confirmationAction) {
@@ -97,12 +72,6 @@ struct JournalView: View {
       }
     }.tint(.red)
   }
-}
-
-private enum JournalPage: String, CaseIterable, Identifiable {
-  case pokedex = "Pokédex"
-  case scans = "Scan history"
-  var id: Self { self }
 }
 
 private enum TrackingFilter: String, CaseIterable, Identifiable {
