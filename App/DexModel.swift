@@ -27,6 +27,16 @@ final class DexModel {
        let entries = try? JSONDecoder().decode([DexEntry].self, from: data) { history = entries }
   }
 
+  var trackedSpecies: Set<Int> {
+    Set(history.filter { !$0.isSample && (1...386).contains($0.number) }.map(\.number))
+  }
+
+  var latestScans: [Int: DexEntry] {
+    history.filter { !$0.isSample }.reduce(into: [:]) { result, entry in
+      if result[entry.number] == nil { result[entry.number] = entry }
+    }
+  }
+
   var modelStatus: String {
     guard #available(iOS 27.0, *) else { return "Image identification requires iOS 27 or later." }
     switch SystemLanguageModel.default.availability {

@@ -40,7 +40,7 @@ struct LeftHardwarePanel: View {
         HStack(alignment: .center, spacing: 20) {
           VStack(alignment: .leading, spacing: 6) {
             Text(model.busy ? "SCANNING…" : "POKÉDEX READY")
-            Text("FOUND  \(model.history.count.formatted(.number.precision(.integerLength(3))))")
+            Text("FOUND  \(model.trackedSpecies.count.formatted(.number.precision(.integerLength(3))))")
             Text(model.entry.number > 0 ? "LOCAL AI MATCH" : "AWAITING SCAN")
           }.font(.system(size: 10, weight: .medium, design: .monospaced))
             .foregroundStyle(Color(red: 0.18, green: 0.30, blue: 0.07))
@@ -48,7 +48,7 @@ struct LeftHardwarePanel: View {
             .background(DexTheme.lime.gradient, in: RoundedRectangle(cornerRadius: 7))
             .overlay(RoundedRectangle(cornerRadius: 7).stroke(.black.opacity(0.4), lineWidth: 2))
           Spacer(minLength: 0)
-          Button(action: journal) { DPad() }.accessibilityLabel("Open field journal")
+          Button(action: journal) { DPad() }.accessibilityLabel("Open Pokédex and scan history")
         }
       }.padding(.horizontal, 23).padding(.top, 14)
       Spacer(minLength: 0)
@@ -109,7 +109,7 @@ struct RightHardwarePanel: View {
         }.padding(3).background(.black.opacity(0.55), in: RoundedRectangle(cornerRadius: 5))
         HStack(alignment: .top) {
           HStack(spacing: 2) {
-            Button(action: journal) { hardwareKey("book.closed.fill") }.accessibilityLabel("Field journal")
+            Button(action: journal) { hardwareKey("book.closed.fill") }.accessibilityLabel("Pokédex and scan history")
             Button(action: settings) { hardwareKey("gearshape") }.accessibilityLabel("Settings")
           }
           Spacer()
