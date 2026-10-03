@@ -19,3 +19,5 @@ https://github.com/PokeAPI/sprites/tree/master/sprites/pokemon/versions/generati
 Pokémon and Pokémon character names are trademarks of Nintendo. Sprite artwork belongs to its respective owners, including Nintendo, Game Freak, and The Pokémon Company.
 
 At the user’s request, the adaptive card grid displays unscanned sprites as solid black alpha-mask silhouettes on a pale green screen. Tracked entries use the original full-color sprite. Nearest-neighbor interpolation preserves the Game Boy Advance pixel art. This silhouette treatment is an intentional adaptation rather than an exact Emerald screen reproduction.
+
+Sprites are registered as named image sets in Assets.xcassets so SwiftUI image lookup resolves compiled assets reliably. Each 64 × 64 sprite is declared at 1× scale.
