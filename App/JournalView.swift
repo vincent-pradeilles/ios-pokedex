@@ -38,9 +38,11 @@ struct JournalView: View {
               Text("II · Johto").tag(2)
               Text("III · Hoenn").tag(3)
             }
-            Picker("Show", selection: $filter) {
+            Picker("Pokémon status", selection: $filter) {
               ForEach(CaptureFilter.allCases) { Text($0.rawValue).tag($0) }
             }
+            .pickerStyle(.segmented)
+            .frame(maxWidth: .infinity)
           } footer: {
             Text("Unknown entries appear as silhouettes with hidden names. Scan a Pokémon to reveal it. Search by number or a captured Pokémon’s name.")
           }
@@ -75,7 +77,7 @@ struct JournalView: View {
 }
 
 private enum CaptureFilter: String, CaseIterable, Identifiable {
-  case all = "All Pokémon"
+  case all = "All"
   case captured = "Captured"
   case unknown = "Unknown"
   var id: Self { self }
