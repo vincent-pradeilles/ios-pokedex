@@ -39,7 +39,7 @@ final class RetroMapModel {
       guard requestID == id else { return }
       guard let source = snapshot.image.cgImage else { throw SnapshotError.missingImage }
       let rendered = await Task.detached(priority: .userInitiated) {
-        RetroMapFilter.render(source, pixelSize: 6, attributionHeight: 80)
+        RetroMapFilter.render(source, pixelSize: 2, attributionHeight: 80)
       }.value
       try Task.checkCancellation()
       guard requestID == id else { return }

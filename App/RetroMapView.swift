@@ -4,14 +4,14 @@ struct RetroMapView: View {
   var location: ScanLocation
   var name: String
   @State private var model = RetroMapModel()
-  @State private var zoom = 1
+  @State private var zoom = -1
   @State private var retry = 0
 
   var body: some View {
     GeometryReader { geometry in
       let size = CGSize(width: max(1, geometry.size.width), height: max(1, geometry.size.height))
       ZStack {
-        Color(red: 0.76, green: 0.84, blue: 0.57)
+        Color(red: 0.42, green: 0.74, blue: 0.57)
         if let image = model.image {
           Image(uiImage: image)
             .resizable()
