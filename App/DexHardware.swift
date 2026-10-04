@@ -91,7 +91,6 @@ struct ReplicaCover: View {
       }
       .frame(width: geometry.size.width, height: geometry.size.height)
       .background(DexTheme.shell, in: RoundedRectangle(cornerRadius: 24))
-      .overlay(alignment: .trailing) { HingeSpine().frame(width: 14).padding(.top, 78).padding(.bottom, 10) }
     }.accessibilityElement(children: .ignore)
       .accessibilityLabel("Pokédex cover closed. Unfold your iPhone to open the Pokédex.")
   }

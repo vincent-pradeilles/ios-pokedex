@@ -1,0 +1,13 @@
+{
+  "images": [
+    {
+      "filename": "pokemon-186.png",
+      "idiom": "universal",
+      "scale": "1x"
+    }
+  ],
+  "info": {
+    "author": "xcode",
+    "version": 1
+  }
+}

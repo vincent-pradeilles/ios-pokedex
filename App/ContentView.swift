@@ -89,32 +89,3 @@ struct ContentView: View {
     if granted { model.narrator.stop(); camera = true } else { model.error = "Camera access is off. Allow it in system Settings, or choose a photo from your library." }
   }
 }
-
-private struct JournalView: View {
-  var model: DexModel
-  @Environment(\.dismiss) private var dismiss
-  var body: some View {
-    NavigationStack {
-      List {
-        if model.history.isEmpty {
-          ContentUnavailableView("Your adventure starts here", systemImage: "book.closed.fill", description: Text("Scan a Pokémon to save your first discovery."))
-        }
-        ForEach(model.history) { entry in
-          Button {
-            model.select(entry)
-            dismiss()
-          } label: {
-            HStack {
-              Text(String(format: "#%03d", entry.number)).font(.system(.body, design: .monospaced)).foregroundStyle(.secondary)
-              Text(entry.name).foregroundStyle(.primary)
-              Spacer()
-              Text(entry.type).font(.caption).foregroundStyle(.secondary)
-            }.padding(.vertical, 8)
-          }
-        }
-      }
-      .navigationTitle("Field journal")
-      .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done", systemImage: "checkmark") { dismiss() } } }
-    }.tint(.red)
-  }
-}

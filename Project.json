@@ -28,7 +28,11 @@
             "UIInterfaceOrientationLandscapeLeft",
             "UIInterfaceOrientationLandscapeRight"
           ],
-          "NSCameraUsageDescription": "Take a picture of a Pok\u00e9mon to remove its background and identify it on your iPhone."
+          "NSCameraUsageDescription": "Take a picture of a Pok\u00e9mon to remove its background and identify it on your iPhone.",
+          "UIApplicationSceneManifest": {
+            "UIApplicationSupportsMultipleScenes": false,
+            "UISceneConfigurations": {}
+          }
         }
       },
       "platform": "iOS",

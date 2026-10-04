@@ -27,6 +27,16 @@ final class DexModel {
        let entries = try? JSONDecoder().decode([DexEntry].self, from: data) { history = entries }
   }
 
+  var capturedSpecies: Set<Int> {
+    Set(history.filter { !$0.isSample && (1...386).contains($0.number) }.map(\.number))
+  }
+
+  var latestScans: [Int: DexEntry] {
+    history.filter { !$0.isSample }.reduce(into: [:]) { result, entry in
+      if result[entry.number] == nil { result[entry.number] = entry }
+    }
+  }
+
   var modelStatus: String {
     guard #available(iOS 27.0, *) else { return "Image identification requires iOS 27 or later." }
     switch SystemLanguageModel.default.availability {
@@ -77,13 +87,15 @@ final class DexModel {
         guard identity.recognized, identity.number > 0 else { throw DexError.message("No confident match. Try one Pokémon, well lit and filling the picture.") }
         let newEntry = DexEntry(name: identity.name, number: identity.number, type: identity.type, summary: identity.summary, removalMode: mode)
         let file = newEntry.id.uuidString + ".png"
-        try result.write(to: Self.storage.appendingPathComponent(file), options: .atomic)
+        try ScanImageStore.save(result, named: file)
         var savedEntry = newEntry
         savedEntry.imageName = file
         entry = savedEntry
         cutout = UIImage(data: result)
-        history.insert(savedEntry, at: 0)
-        UserDefaults.standard.set(try JSONEncoder().encode(history), forKey: "entries")
+        let updatedHistory = [savedEntry] + history
+        let savedHistory = try JSONEncoder().encode(updatedHistory)
+        UserDefaults.standard.set(savedHistory, forKey: "entries")
+        history = updatedHistory
         phase = "New discovery"
         if narrator.automaticallyNarrates { narrator.narrate(savedEntry) }
       } catch is CancellationError {
@@ -104,14 +116,9 @@ final class DexModel {
     narrator.stop()
     originalPhoto = nil
     entry = item
-    cutout = item.imageName.flatMap { UIImage(contentsOfFile: Self.storage.appendingPathComponent($0).path) }
+    cutout = item.imageName.flatMap { ScanImageStore.image(named: $0) }
     subjectBounds = CutoutFraming.visibleBounds(of: cutout)
     phase = "Saved discovery"
   }
 
-  static var storage: URL {
-    let url = URL.documentsDirectory.appendingPathComponent("Scans", isDirectory: true)
-    try? FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
-    return url
-  }
 }
