@@ -3,32 +3,20 @@ import MapKit
 
 struct ScanLocationView: View {
   var entry: DexEntry
-  @State private var style: LocationMapStyle = .retro
   @Environment(\.dismiss) private var dismiss
 
   var body: some View {
     NavigationStack {
       Group {
         if let location = entry.location {
-          VStack(spacing: 0) {
-            Picker("Map appearance", selection: $style) {
-              ForEach(LocationMapStyle.allCases) { Text($0.rawValue).tag($0) }
-            }
-            .pickerStyle(.segmented)
-            .padding()
-            if style == .retro {
-              RetroMapView(location: location, name: entry.name)
-            } else {
-              Map(initialPosition: .region(MKCoordinateRegion(
-                center: location.coordinate,
-                latitudinalMeters: max(1000, location.horizontalAccuracy * 4),
-                longitudinalMeters: max(1000, location.horizontalAccuracy * 4)
-              ))) {
-                Marker(entry.name, coordinate: location.coordinate)
-                MapCircle(center: location.coordinate, radius: location.horizontalAccuracy)
-                  .foregroundStyle(.blue.opacity(0.15))
-              }
-            }
+          Map(initialPosition: .region(MKCoordinateRegion(
+            center: location.coordinate,
+            latitudinalMeters: max(1000, location.horizontalAccuracy * 4),
+            longitudinalMeters: max(1000, location.horizontalAccuracy * 4)
+          ))) {
+            Marker(entry.name, coordinate: location.coordinate)
+            MapCircle(center: location.coordinate, radius: location.horizontalAccuracy)
+              .foregroundStyle(.blue.opacity(0.15))
           }
           .safeAreaInset(edge: .bottom) {
             VStack(alignment: .leading, spacing: 8) {
@@ -65,10 +53,4 @@ struct ScanLocationView: View {
       }
     }
   }
-}
-
-private enum LocationMapStyle: String, CaseIterable, Identifiable {
-  case retro = "GBA Style"
-  case standard = "Standard"
-  var id: Self { self }
 }
