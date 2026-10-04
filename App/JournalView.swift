@@ -43,8 +43,6 @@ struct JournalView: View {
             }
             .pickerStyle(.segmented)
             .frame(maxWidth: .infinity)
-          } footer: {
-            Text("Unknown entries appear as silhouettes with hidden names. Scan a Pokémon to reveal it. Search by number or a captured Pokémon’s name.")
           }
           Section {
             LazyVGrid(columns: [GridItem(.adaptive(minimum: typeSize.isAccessibilitySize ? 240 : 140), spacing: 12)], spacing: 12) {
