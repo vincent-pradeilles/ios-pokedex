@@ -102,18 +102,18 @@ struct RightHardwarePanel: View {
                 Button {
                   if isLocationKey { showLocation = true } else { notes = true }
                 } label: {
-                  RoundedRectangle(cornerRadius: 3)
-                    .fill(LinearGradient(colors: [Color(red: 0.3, green: 0.70, blue: 0.95), Color(red: 0.12, green: 0.42, blue: 0.74)], startPoint: .top, endPoint: .bottom))
-                    .overlay(RoundedRectangle(cornerRadius: 3).stroke(.black.opacity(0.65)))
-                    .frame(height: 34)
-                    .overlay {
-                      if isLocationKey {
-                        Image(systemName: "mappin.and.ellipse")
-                          .font(.system(size: 17, weight: .semibold))
-                          .foregroundStyle(.black.opacity(0.8))
-                      }
+                  ZStack {
+                    if isLocationKey {
+                      Image(systemName: "mappin.and.ellipse")
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundStyle(Color(red: 0.035, green: 0.17, blue: 0.29))
+                        .shadow(color: .white.opacity(0.4), radius: 0, y: 1)
                     }
-                }.accessibilityLabel(isLocationKey ? "Show scan location" : "Entry details, key \(row * 5 + column + 1)")
+                  }
+                  .frame(maxWidth: .infinity)
+                  .frame(height: 34)
+                }.buttonStyle(BlueHardwareKeyStyle())
+                  .accessibilityLabel(isLocationKey ? "Show scan location" : "Entry details, key \(row * 5 + column + 1)")
                   .disabled(isLocationKey && (model.busy || model.entry.number == 0))
               }
             }
