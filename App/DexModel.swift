@@ -62,6 +62,8 @@ final class DexModel {
     phase = "Scanning…"
     task = Task {
       defer { busy = false; task = nil }
+      let locationCapture = ScanLocationCapture()
+      async let scanLocation = locationCapture.capture()
       do {
         let scale = min(1, 1600 / max(image.size.width, image.size.height))
         let size = CGSize(width: image.size.width * scale, height: image.size.height * scale)
@@ -90,6 +92,8 @@ final class DexModel {
         try ScanImageStore.save(result, named: file)
         var savedEntry = newEntry
         savedEntry.imageName = file
+        savedEntry.location = await scanLocation
+        try Task.checkCancellation()
         entry = savedEntry
         cutout = UIImage(data: result)
         let updatedHistory = [savedEntry] + history
