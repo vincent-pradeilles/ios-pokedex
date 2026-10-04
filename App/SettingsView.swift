@@ -17,7 +17,7 @@ struct SettingsView: View {
             }
           }.pickerStyle(.segmented)
             .disabled(model.busy)
-        } header: { Text("Scan processing") } footer: {
+        } header: { Text("Capture processing") } footer: {
           Text(model.removalMode.explanation)
         }
         if model.removalMode == .photoroom {
@@ -32,7 +32,7 @@ struct SettingsView: View {
             }
             Link("Photoroom API dashboard", destination: URL(string: "https://app.photoroom.com/api-dashboard")!)
           } header: { Text("Photoroom & AI Shadows") } footer: {
-            Text("Your key is stored securely in this iPhone’s Keychain. Clear the field and save to remove it. Each scan sends your selected photo to Photoroom for background removal and a soft AI shadow. This uses the Image Editing API (Plus plan) and its credits.")
+            Text("Your key is stored securely in this iPhone’s Keychain. Clear the field and save to remove it. Each capture sends your selected photo to Photoroom for background removal and a soft AI shadow. This uses the Image Editing API (Plus plan) and its credits.")
           }
         }
         Section("On-device identification") {

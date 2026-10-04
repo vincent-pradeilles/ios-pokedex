@@ -9,7 +9,7 @@ enum ScanImageStore {
 
   static func save(_ data: Data, named name: String) throws {
     guard let image = UIImage(data: data), let png = image.pngData() else {
-      throw DexError.message("Couldn’t save this Pokémon’s image. Please try scanning again.")
+      throw DexError.message("Couldn’t save this Pokémon’s image. Please try capturing again.")
     }
     try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
     // PNG retains the removed background's transparency; atomic writes avoid partial files.

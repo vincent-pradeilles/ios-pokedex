@@ -39,9 +39,9 @@ struct LeftHardwarePanel: View {
         }
         HStack(alignment: .center, spacing: 20) {
           VStack(alignment: .leading, spacing: 6) {
-            Text(model.busy ? "SCANNING…" : "POKÉDEX READY")
+            Text(model.busy ? "CAPTURING…" : "POKÉDEX READY")
             Text("FOUND  \(model.capturedSpecies.count.formatted(.number.precision(.integerLength(3))))")
-            Text(model.entry.number > 0 ? "LOCAL AI MATCH" : "AWAITING SCAN")
+            Text(model.entry.number > 0 ? "LOCAL AI MATCH" : "AWAITING CAPTURE")
           }.font(.system(size: 10, weight: .medium, design: .monospaced))
             .foregroundStyle(Color(red: 0.18, green: 0.30, blue: 0.07))
             .frame(width: 138, height: 65, alignment: .leading).padding(.leading, 12)
@@ -113,7 +113,7 @@ struct RightHardwarePanel: View {
                           .foregroundStyle(.black.opacity(0.8))
                       }
                     }
-                }.accessibilityLabel(isLocationKey ? "Show scan location" : "Entry details, key \(row * 5 + column + 1)")
+                }.accessibilityLabel(isLocationKey ? "Show capture location" : "Entry details, key \(row * 5 + column + 1)")
                   .disabled(isLocationKey && (model.busy || model.entry.number == 0))
               }
             }

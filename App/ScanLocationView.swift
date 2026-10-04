@@ -27,7 +27,7 @@ struct ScanLocationView: View {
                 .foregroundStyle(.secondary)
               Text(location.capturedAt, format: .dateTime.month().day().year().hour().minute())
                 .foregroundStyle(.secondary)
-              Text("Device location when scanned, including scans from your photo library.")
+              Text("Device location when captured, including captures from your photo library.")
                 .font(.footnote).foregroundStyle(.secondary)
             }
             .font(.subheadline)
@@ -40,11 +40,11 @@ struct ScanLocationView: View {
           ContentUnavailableView {
             Label("No location saved", systemImage: "mappin.and.ellipse")
           } description: {
-            Text("This scan has no recorded coordinates. For future scans, allow location access in Settings and scan where a location signal is available.")
+            Text("This capture has no recorded coordinates. For future captures, allow location access in Settings and capture Pokémon where a location signal is available.")
           }
         }
       }
-      .navigationTitle("Scan Location")
+      .navigationTitle("Capture Location")
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {

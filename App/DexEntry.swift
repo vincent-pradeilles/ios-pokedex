@@ -13,7 +13,7 @@ struct DexEntry: Codable, Identifiable {
   var removalMode: BackgroundRemovalMode?
   var location: ScanLocation?
 
-  static let empty = DexEntry(name: "Ready to scan", number: 0, type: "—", summary: "No Pokémon scanned yet.\n\nTake a picture or choose a photo to begin your next discovery.")
+  static let empty = DexEntry(name: "Ready to capture", number: 0, type: "—", summary: "No Pokémon captured yet.\n\nTake a picture or choose a photo to begin your next discovery.")
 
 }
 

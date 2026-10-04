@@ -21,7 +21,7 @@ struct DisplayPanel: View {
         HStack {
           Text(entry.number > 0 ? String(format: "No. %03d", entry.number) : "No. ———")
           Spacer()
-          Text(busy ? "SCANNING" : isEmpty ? "AWAITING SCAN" : entry.number > 0 ? "AI MATCH" : "NO MATCH")
+          Text(busy ? "CAPTURING" : isEmpty ? "AWAITING CAPTURE" : entry.number > 0 ? "AI MATCH" : "NO MATCH")
         }.font(.system(.caption2, design: .monospaced, weight: .medium))
         ZStack {
           GridPattern().stroke(DexTheme.ink.opacity(0.065), lineWidth: 0.5)

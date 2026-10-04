@@ -123,6 +123,6 @@ private struct PokemonCatalogCard: View {
     .disabled(entry == nil || busy)
     .accessibilityElement(children: .ignore)
     .accessibilityLabel(entry == nil ? "Number \(species.number), unknown" : "Number \(species.number), \(species.name), captured")
-    .accessibilityHint(entry == nil ? "Scan this Pokémon to reveal its entry" : "Opens your latest saved scan")
+    .accessibilityHint(entry == nil ? "Capture this Pokémon to reveal its entry" : "Opens your latest saved capture")
   }
 }
