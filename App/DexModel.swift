@@ -51,17 +51,19 @@ final class DexModel {
     guard !busy else { return }
     let mode = removalMode
     let key = mode == .photoroom ? KeychainStore.read() : ""
-    guard mode != .photoroom || !key.isEmpty else { error = "Add your Photoroom API key in Settings before scanning."; return }
+    guard mode != .photoroom || !key.isEmpty else { error = "Add your Photoroom API key in Settings before capturing a Pokémon."; return }
     guard #available(iOS 27.0, *), SystemLanguageModel.default.availability == .available else { error = modelStatus; return }
     narrator.stop()
     originalPhoto = image
     cutout = nil
-    entry = DexEntry(name: "Scanning…", number: 0, type: "Unknown", summary: "Isolating your Pokémon. Identification will begin as soon as its background is removed.")
+    entry = DexEntry(name: "Capturing…", number: 0, type: "Unknown", summary: "Isolating your Pokémon. Identification will begin as soon as its background is removed.")
     entry.removalMode = mode
     busy = true
-    phase = "Scanning…"
+    phase = "Capturing…"
     task = Task {
       defer { busy = false; task = nil }
+      let locationCapture = ScanLocationCapture()
+      async let scanLocation = locationCapture.capture()
       do {
         let scale = min(1, 1600 / max(image.size.width, image.size.height))
         let size = CGSize(width: image.size.width * scale, height: image.size.height * scale)
@@ -90,6 +92,8 @@ final class DexModel {
         try ScanImageStore.save(result, named: file)
         var savedEntry = newEntry
         savedEntry.imageName = file
+        savedEntry.location = await scanLocation
+        try Task.checkCancellation()
         entry = savedEntry
         cutout = UIImage(data: result)
         let updatedHistory = [savedEntry] + history
@@ -99,8 +103,8 @@ final class DexModel {
         phase = "New discovery"
         if narrator.automaticallyNarrates { narrator.narrate(savedEntry) }
       } catch is CancellationError {
-        phase = "Scan cancelled"
-        entry.name = "Scan cancelled"
+        phase = "Capture cancelled"
+        entry.name = "Capture cancelled"
       } catch {
         if !Task.isCancelled { self.error = error.localizedDescription }
         phase = "Ready to try again"

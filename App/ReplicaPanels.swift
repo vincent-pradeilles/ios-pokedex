@@ -39,9 +39,9 @@ struct LeftHardwarePanel: View {
         }
         HStack(alignment: .center, spacing: 20) {
           VStack(alignment: .leading, spacing: 6) {
-            Text(model.busy ? "SCANNING…" : "POKÉDEX READY")
+            Text(model.busy ? "CAPTURING…" : "POKÉDEX READY")
             Text("FOUND  \(model.capturedSpecies.count.formatted(.number.precision(.integerLength(3))))")
-            Text(model.entry.number > 0 ? "LOCAL AI MATCH" : "AWAITING SCAN")
+            Text(model.entry.number > 0 ? "LOCAL AI MATCH" : "AWAITING CAPTURE")
           }.font(.system(size: 10, weight: .medium, design: .monospaced))
             .foregroundStyle(Color(red: 0.18, green: 0.30, blue: 0.07))
             .frame(width: 138, height: 65, alignment: .leading).padding(.leading, 12)
@@ -76,6 +76,7 @@ struct RightHardwarePanel: View {
   var settings: () -> Void
   var journal: () -> Void
   @State private var notes = false
+  @State private var showLocation = false
   var body: some View {
     VStack(spacing: 0) {
       Color.clear.frame(height: 112)
@@ -97,12 +98,23 @@ struct RightHardwarePanel: View {
           ForEach(0..<2) { row in
             HStack(spacing: 3) {
               ForEach(0..<5) { column in
-                Button { notes = true } label: {
+                let isLocationKey = row == 0 && column == 0
+                Button {
+                  if isLocationKey { showLocation = true } else { notes = true }
+                } label: {
                   RoundedRectangle(cornerRadius: 3)
                     .fill(LinearGradient(colors: [Color(red: 0.3, green: 0.70, blue: 0.95), Color(red: 0.12, green: 0.42, blue: 0.74)], startPoint: .top, endPoint: .bottom))
                     .overlay(RoundedRectangle(cornerRadius: 3).stroke(.black.opacity(0.65)))
                     .frame(height: 34)
-                }.accessibilityLabel("Entry details, key \(row * 5 + column + 1)")
+                    .overlay {
+                      if isLocationKey {
+                        Image(systemName: "mappin.and.ellipse")
+                          .font(.system(size: 17, weight: .semibold))
+                          .foregroundStyle(.black.opacity(0.8))
+                      }
+                    }
+                }.accessibilityLabel(isLocationKey ? "Show capture location" : "Entry details, key \(row * 5 + column + 1)")
+                  .disabled(isLocationKey && (model.busy || model.entry.number == 0))
               }
             }
           }
@@ -144,6 +156,7 @@ struct RightHardwarePanel: View {
     }
     .background(DexTheme.shell, in: RightShell())
     .overlay(RightShell().stroke(.black.opacity(0.4), lineWidth: 3))
+    .sheet(isPresented: $showLocation) { ScanLocationView(entry: model.entry) }
     .sheet(isPresented: $notes) {
       NavigationStack {
         ScrollView {

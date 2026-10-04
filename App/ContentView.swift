@@ -45,7 +45,7 @@ struct ContentView: View {
           if let image { model.scan(image) }
         }.ignoresSafeArea()
       }
-      .alert("Scan needs attention", isPresented: Binding(get: { model.error != nil }, set: { if !$0 { model.error = nil } })) {
+      .alert("Capture needs attention", isPresented: Binding(get: { model.error != nil }, set: { if !$0 { model.error = nil } })) {
         Button("OK", role: .cancel) { model.error = nil }
       } message: { Text(model.error ?? "") }
       .task(id: photo) {
@@ -82,7 +82,7 @@ struct ContentView: View {
 
   private func openCamera() async {
     guard UIImagePickerController.isSourceTypeAvailable(.camera) else {
-      model.error = "A camera isn’t available here. Use Choose Photo to scan an image from your library."
+      model.error = "A camera isn’t available here. Use Choose Photo to capture a Pokémon from your library."
       return
     }
     let granted = await AVCaptureDevice.requestAccess(for: .video)

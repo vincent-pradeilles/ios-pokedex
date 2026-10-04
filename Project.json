@@ -28,6 +28,7 @@
             "UIInterfaceOrientationLandscapeLeft",
             "UIInterfaceOrientationLandscapeRight"
           ],
+          "NSLocationWhenInUseUsageDescription": "Save your current location with each Pokémon capture so you can revisit where you found it.",
           "NSCameraUsageDescription": "Take a picture of a Pok\u00e9mon to remove its background and identify it on your iPhone.",
           "UIApplicationSceneManifest": {
             "UIApplicationSupportsMultipleScenes": false,
