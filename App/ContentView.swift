@@ -6,7 +6,7 @@ struct ContentView: View {
   @State private var model = DexModel()
   @State private var settings = false
   @State private var journal = false
-  @State private var camera = false
+  @State private var camera = CameraCapture()
   @State private var photo: PhotosPickerItem?
   @Environment(\.scenePhase) private var scenePhase
   @Environment(\.horizontalSizeClass) private var sizeClass
@@ -39,17 +39,12 @@ struct ContentView: View {
       .background(DexTheme.shell.ignoresSafeArea())
       .sheet(isPresented: $settings) { SettingsView(model: model) }
       .sheet(isPresented: $journal) { JournalView(model: model) }
-      .fullScreenCover(isPresented: $camera) {
-        CameraCapture { image in
-          camera = false
-          if let image { model.scan(image) }
-        }.ignoresSafeArea()
-      }
       .alert("Capture needs attention", isPresented: Binding(get: { model.error != nil }, set: { if !$0 { model.error = nil } })) {
         Button("OK", role: .cancel) { model.error = nil }
       } message: { Text(model.error ?? "") }
       .task(id: photo) {
         guard let photo else { return }
+        camera.stop()
         do {
           guard let data = try await photo.loadTransferable(type: Data.self), let image = UIImage(data: data) else { throw DexError.message("Couldn’t open this photo. Please select another image.") }
           model.scan(image)
@@ -61,7 +56,11 @@ struct ContentView: View {
       } message: { Text(model.narrator.error ?? "") }
       .onChange(of: scenePhase) { _, phase in
         if phase != .active { model.narrator.stop() }
+        if phase == .background { camera.stop() }
       }
+      .onChange(of: settings) { _, value in if value { camera.stop() } }
+      .onChange(of: journal) { _, value in if value { camera.stop() } }
+      .onDisappear { camera.stop() }
       .sensoryFeedback(.success, trigger: model.history.count)
     }
     .tint(.white)
@@ -70,7 +69,7 @@ struct ContentView: View {
 
   private var mainPanel: some View {
     HardwareFit {
-      LeftHardwarePanel(model: model, photo: $photo, camera: { Task { await openCamera() } }, journal: { journal = true })
+      LeftHardwarePanel(model: model, photo: $photo, capture: camera, camera: { Task { await openCamera() } }, journal: { journal = true })
     }
   }
 
@@ -81,11 +80,14 @@ struct ContentView: View {
   }
 
   private func openCamera() async {
-    guard UIImagePickerController.isSourceTypeAvailable(.camera) else {
-      model.error = "A camera isn’t available here. Use Choose Photo to capture a Pokémon from your library."
-      return
-    }
-    let granted = await AVCaptureDevice.requestAccess(for: .video)
-    if granted { model.narrator.stop(); camera = true } else { model.error = "Camera access is off. Allow it in system Settings, or choose a photo from your library." }
+    guard !model.busy else { return }
+    do {
+      if camera.isActive {
+        if let image = try await camera.capture() { model.scan(image) }
+      } else {
+        model.narrator.stop()
+        try await camera.start()
+      }
+    } catch { model.error = error.localizedDescription }
   }
 }
