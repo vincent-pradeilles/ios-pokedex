@@ -116,6 +116,29 @@ final class DexModel {
 
   func cancel() { task?.cancel() }
 
+  func deleteAllPersistedData() throws {
+    // An in-flight scan must finish before its files and preferences can be removed.
+    guard !busy else { throw DexError.message("Wait for the current capture to finish, then try again.") }
+    guard let domain = Bundle.main.bundleIdentifier else {
+      throw DexError.message("Couldn’t access the app’s saved settings.")
+    }
+    try KeychainStore.save("")
+    try ScanImageStore.deleteAll()
+    narrator.stop()
+    history = []
+    entry = .empty
+    originalPhoto = nil
+    cutout = nil
+    subjectBounds = CGRect(x: 0, y: 0, width: 1, height: 1)
+    phase = "Ready to explore"
+    error = nil
+    removalMode = .onDevice
+    // Clear preferences after assigning properties that persist through didSet.
+    UserDefaults.standard.removePersistentDomain(forName: domain)
+    narrator = DexNarrator()
+    URLCache.shared.removeAllCachedResponses()
+  }
+
   func select(_ item: DexEntry) {
     narrator.stop()
     originalPhoto = nil

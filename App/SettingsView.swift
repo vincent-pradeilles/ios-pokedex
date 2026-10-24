@@ -5,6 +5,9 @@ struct SettingsView: View {
   @State private var apiKey = ""
   @State private var saved = false
   @State private var error: String?
+  @State private var confirmsDeletion = false
+  @State private var deletionError: String?
+  @State private var dataDeleted = false
   @Environment(\.dismiss) private var dismiss
 
   var body: some View {
@@ -57,6 +60,20 @@ struct SettingsView: View {
         } header: { Text("Pokédex voice") } footer: {
           Text("A US-English system voice with a radio-style filter and subtle electronic doubling inspired by the reference clip. This is an approximation, not the anime’s original voice. Tap the yellow speaker button to replay an entry.")
         }
+        Section {
+          Button("Delete All Persisted Data", role: .destructive) {
+            confirmsDeletion = true
+          }
+          .disabled(model.busy)
+          if dataDeleted {
+            Text("All saved data has been deleted.")
+              .foregroundStyle(.secondary)
+          }
+        } header: { Text("Saved data") } footer: {
+          Text(model.busy
+               ? "Wait for the current capture to finish before deleting saved data."
+               : "Permanently deletes discoveries, scan images, saved locations, and your Photoroom API key, and resets all settings on this device.")
+        }
         Section("About") {
           LabeledContent("Pocket Dex", value: "1.0")
           Text("An independent fan project. Pokémon and Pokémon character names are trademarks of Nintendo, Creatures, and GAME FREAK.")
@@ -67,6 +84,26 @@ struct SettingsView: View {
       .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done", systemImage: "checkmark") { dismiss() } } }
       .onAppear { apiKey = KeychainStore.read() }
       .onChange(of: apiKey) { saved = false }
+      .alert("Delete All Persisted Data?", isPresented: $confirmsDeletion) {
+        Button("Cancel", role: .cancel) { }
+        Button("Delete All Data", role: .destructive) {
+          dataDeleted = false
+          do {
+            try model.deleteAllPersistedData()
+            apiKey = ""
+            saved = false
+            dataDeleted = true
+          } catch {
+            apiKey = KeychainStore.read()
+            deletionError = error.localizedDescription
+          }
+        }
+      } message: {
+        Text("All discoveries, scan images, saved locations, and your Photoroom API key will be deleted from this device. All settings will reset. This cannot be undone.")
+      }
+      .alert("Couldn’t Delete All Data", isPresented: Binding(get: { deletionError != nil }, set: { if !$0 { deletionError = nil } })) {
+        Button("OK", role: .cancel) { deletionError = nil }
+      } message: { Text(deletionError ?? "") }
       .alert("Couldn’t save key", isPresented: Binding(get: { error != nil }, set: { if !$0 { error = nil } })) {
         Button("OK", role: .cancel) { error = nil }
       } message: { Text(error ?? "") }
