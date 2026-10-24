@@ -19,6 +19,7 @@ struct HardwareFit<Content: View>: View {
 struct LeftHardwarePanel: View {
   var model: DexModel
   @Binding var photo: PhotosPickerItem?
+  var capture: CameraCapture
   var camera: () -> Void
   var journal: () -> Void
 
@@ -26,20 +27,22 @@ struct LeftHardwarePanel: View {
     VStack(spacing: 0) {
       ReplicaSensor()
       VStack(spacing: 16) {
-        DisplayPanel(entry: model.entry, image: model.cutout, originalPhoto: model.originalPhoto, subjectBounds: model.subjectBounds, busy: model.busy, phase: model.phase)
+        DisplayPanel(entry: model.entry, image: model.cutout, originalPhoto: model.originalPhoto, subjectBounds: model.subjectBounds, busy: model.busy, phase: model.phase, camera: capture)
         HStack(spacing: 13) {
           Button(action: camera) {
             Circle().fill(Color(white: 0.10).gradient).frame(width: 42, height: 42)
               .overlay(Circle().stroke(.black, lineWidth: 3))
               .overlay(Image(systemName: "camera.fill").font(.system(size: 15)).foregroundStyle(.white.opacity(0.65)))
-          }.accessibilityLabel("Take a Pokémon photo").disabled(model.busy)
+          }.frame(minWidth: 44, minHeight: 44)
+            .accessibilityLabel(capture.isActive ? "Take a Pokémon photo" : "Open camera")
+            .disabled(model.busy || (capture.isActive && !capture.isReady) || capture.isCapturing)
           Capsule().fill(Color(red: 0.97, green: 0.28, blue: 0.20)).frame(width: 47, height: 9).overlay(Capsule().stroke(.black.opacity(0.65), lineWidth: 2))
           Capsule().fill(DexTheme.lime).frame(width: 47, height: 9).overlay(Capsule().stroke(.black.opacity(0.65), lineWidth: 2))
           Spacer()
         }
         HStack(alignment: .center, spacing: 20) {
           VStack(alignment: .leading, spacing: 6) {
-            Text(model.busy ? "CAPTURING…" : "POKÉDEX READY")
+            Text(capture.isActive ? "CAMERA READY" : model.busy ? "CAPTURING…" : "POKÉDEX READY")
             Text("FOUND  \(model.capturedSpecies.count.formatted(.number.precision(.integerLength(3))))")
             Text(model.entry.number > 0 ? "LOCAL AI MATCH" : "AWAITING CAPTURE")
           }.font(.system(size: 10, weight: .medium, design: .monospaced))
@@ -58,13 +61,16 @@ struct LeftHardwarePanel: View {
             .padding(10).background(.black.opacity(0.1), in: Capsule())
         }.disabled(model.busy)
         Spacer()
-        if model.busy {
+        if capture.isActive {
+          Button("Cancel") { capture.stop() }.font(.caption)
+        } else if model.busy {
           Button("Cancel") { model.cancel() }.font(.caption)
         } else {
           Text("KANTO • FIELD UNIT 01").font(.system(size: 8, design: .monospaced)).tracking(1)
         }
       }.foregroundStyle(.white.opacity(0.65)).padding(.horizontal, 24).padding(.bottom, 12)
     }
+    .onDisappear { capture.stop() }
     .background(DexTheme.shell, in: RoundedRectangle(cornerRadius: 22))
     .overlay(RoundedRectangle(cornerRadius: 22).stroke(.black.opacity(0.38), lineWidth: 3))
     .overlay(RoundedRectangle(cornerRadius: 17).stroke(.white.opacity(0.13)).padding(6).allowsHitTesting(false))

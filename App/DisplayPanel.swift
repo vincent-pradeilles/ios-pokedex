@@ -8,6 +8,7 @@ struct DisplayPanel: View {
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   var busy: Bool
   var phase: String
+  var camera: CameraCapture
 
   private var isEmpty: Bool { entry.number == 0 && originalPhoto == nil && image == nil && !busy }
 
@@ -17,7 +18,7 @@ struct DisplayPanel: View {
         Circle().fill(DexTheme.red).frame(width: 5, height: 5)
         Circle().fill(DexTheme.red).frame(width: 5, height: 5)
       }.accessibilityHidden(true)
-      VStack(spacing: 8) {
+        VStack(spacing: 8) {
         HStack {
           Text(entry.number > 0 ? String(format: "No. %03d", entry.number) : "No. ———")
           Spacer()
@@ -37,6 +38,24 @@ struct DisplayPanel: View {
           Text(entry.type.uppercased()).font(.system(.caption2, design: .monospaced, weight: .bold))
             .padding(.horizontal, 9).padding(.vertical, 5)
             .background(DexTheme.ink.opacity(0.08), in: Capsule())
+        }
+      }
+        .opacity(camera.isActive ? 0 : 1)
+        .accessibilityHidden(camera.isActive)
+      .overlay {
+        ZStack {
+        if camera.isActive {
+          CameraPreview(camera: camera)
+            .accessibilityLabel("Live camera preview")
+          VStack {
+            Spacer()
+            Text(camera.isCapturing ? "CAPTURING…" : camera.isReady ? "PRESS CAMERA TO CAPTURE" : "STARTING CAMERA…")
+              .font(.system(.caption2, design: .monospaced, weight: .bold))
+              .foregroundStyle(.white)
+              .padding(8)
+              .background(.black.opacity(0.65), in: Capsule())
+          }.padding(10)
+        }
         }
       }
       .foregroundStyle(DexTheme.ink)

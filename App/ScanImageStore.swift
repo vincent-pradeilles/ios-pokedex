@@ -20,6 +20,12 @@ enum ScanImageStore {
     UIImage(contentsOfFile: directory.appendingPathComponent(name).path)
   }
 
+  static func deleteAll() throws {
+    if FileManager.default.fileExists(atPath: directory.path) {
+      try FileManager.default.removeItem(at: directory)
+    }
+  }
+
   static func thumbnail(named name: String) async -> UIImage? {
     await Task.detached(priority: .utility) {
       let url = directory.appendingPathComponent(name)
