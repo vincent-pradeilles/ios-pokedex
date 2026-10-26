@@ -27,6 +27,14 @@ struct GeminiIdentificationChecks {
     precondition(request.value(forHTTPHeaderField: "x-goog-api-key") == "test-key")
     precondition(request.url?.query == nil)
     let body = try JSONSerialization.jsonObject(with: request.httpBody!) as! [String: Any]
+    precondition(request.httpMethod == "POST")
+    precondition(request.url?.absoluteString == "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent")
+    let generationConfig = body["generationConfig"] as! [String: Any]
+    let responseFormat = generationConfig["responseFormat"] as! [String: Any]
+    let textFormat = responseFormat["text"] as! [String: Any]
+    precondition(textFormat["mimeType"] as? String == "APPLICATION_JSON")
+    let schema = textFormat["schema"] as! [String: Any]
+    precondition(Set(schema["required"] as! [String]) == Set(["recognized", "name", "number", "type", "summary"]))
     let contents = body["contents"] as! [[String: Any]]
     let parts = contents[0]["parts"] as! [[String: Any]]
     let image = parts[0]["inlineData"] as! [String: String]
@@ -36,14 +44,18 @@ struct GeminiIdentificationChecks {
     let session = URLSession(configuration: config)
     defer { session.invalidateAndCancel() }
     let service = GeminiIdentificationService(session: session)
-    for status in [200, 400, 401, 403, 429, 500] {
+    for status in [200, 400, 401, 402, 403, 429, 500] {
       StubProtocol.status = status
       StubProtocol.payload = valid
       do {
         let result = try await service.identify(Data([1]), key: "test-key")
         precondition(status == 200 && result.number == 25)
-      } catch is DexError {
+      } catch let error as DexError {
         precondition(status != 200)
+        if status == 402 {
+          precondition(error.localizedDescription.contains("prepaid credits"))
+          precondition(!error.localizedDescription.contains("try again later"))
+        }
       }
     }
     print("Gemini checks passed: identification, unknown, malformed/blocked/truncated output, request framing, and HTTP error handling.")

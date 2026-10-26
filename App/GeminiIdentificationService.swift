@@ -14,6 +14,8 @@ struct GeminiIdentificationService {
     case 200..<300: return try Self.decode(data)
     case 400, 401, 403:
       throw DexError.message("Gemini couldn’t accept this request. Check your Gemini API key and API access in Settings and Google AI Studio.")
+    case 402:
+      throw DexError.message("Gemini requires prepaid credits (402). Open Google AI Studio and check billing for the project associated with your Gemini API key. Add credits or enable auto-reload before trying again.")
     case 429:
       throw DexError.message("Gemini’s usage limit was reached. Check your quota in Google AI Studio or try again later.")
     default:
