@@ -2,7 +2,7 @@
 
 A SwiftUI Pokédex replica designed for iPhone Duo. Unfold the phone to reveal two red hardware-inspired panels, an inset scanner display, a blue keypad, and a hinge aligned with the device’s physical fold.
 
-The app identifies Pokémon from photos using Google Gemini. Choose Apple’s on-device Vision API or Photoroom to remove the background before the processed image is sent to Gemini. On-device processing uses a subtle display shadow; Photoroom adds a controllable AI shadow.
+The app identifies Pokémon from photos using your choice of Google Gemini or Apple’s on-device Foundation Models. Choose Apple’s on-device Vision API or Photoroom to remove the background before the processed image is identified by the selected model. On-device processing uses a subtle display shadow; Photoroom adds a controllable AI shadow.
 
 ## Experience
 
@@ -23,10 +23,10 @@ The app identifies Pokémon from photos using Google Gemini. Choose Apple’s on
 | Development environment | Bitrig with the iOS 27.1 SDK |
 | Intended device | iPhone Duo; the open layout is the primary experience |
 | Minimum deployment target | iOS 26.0 |
-| Image identification | Gemini API key with access to `gemini-3.8-flash` |
+| Image identification | Gemini API key with access to `gemini-3.8-flash`, or iOS 27+ with Apple Intelligence and an available on-device model |
 | Fold-aware layout APIs | iOS 27.1 or later |
 | Photoroom (optional) | API key with Image Editing API access (Plus plan) and available credits when using Photoroom mode |
-| Network | Required for Gemini identification in both background-removal modes |
+| Network | Required for Gemini recognition or Photoroom background removal |
 
 The app can launch on the minimum deployment target, with availability checks for Duo-specific layout APIs. Compact layouts show the closed cover rather than a complete conventional iPhone interface.
 
@@ -36,7 +36,7 @@ The app can launch on the minimum deployment target, with availability checks fo
 2. Build the `Pocket Dex` target using the iOS 27.1 SDK.
 3. Choose iPhone Duo in the built-in simulator and unfold it to see the full interface.
 4. Open Settings using the small gear key on the right panel.
-5. Select **On device** or **Photoroom** under Scan processing. For Photoroom, enter your API key and tap **Save key**. Enter a Gemini key under **Gemini identification** and tap **Save Gemini key**.
+5. Select **On device** or **Photoroom** under Scan processing. For Photoroom, enter your API key and tap **Save key**. Choose **On device** or **Gemini** under **Pokémon recognition**. For Gemini, enter a key under **Gemini identification** and tap **Save Gemini key**.
 6. Tap the camera button or **PHOTO** to begin a scan.
 
 The camera needs a device with an available camera and permission to use it. Use the photo picker when testing without one. Gemini identification works independently of Apple Intelligence availability.
@@ -45,16 +45,18 @@ To remove a saved API key, clear its field in Settings and save again. Deleting 
 
 ## Scan pipeline
 
-1. Check that a Gemini API key is configured and, for Photoroom mode, that a Photoroom API key is configured.
+1. Check that the chosen recognition model is available (Gemini key or on-device model readiness) and, for Photoroom mode, that a Photoroom API key is configured.
 2. Crop camera photos to the centered aspect-fill viewport, retaining the preview rotation. The live preview and still share the same display area. Prepare the selected photo. On-device mode runs Vision’s `VNGenerateForegroundInstanceMaskRequest` locally; Photoroom mode uploads to `POST https://image-api.photoroom.com/v2/edit`.
 3. Produce a transparent PNG, preserving the original canvas and subject position for the reveal. Photoroom includes its AI shadow; on-device mode adds a subtle animated display shadow.
 4. Publish the processed image immediately and begin the animated background dissolve and reframing.
-5. In parallel with the reveal, send the PNG to Gemini and request a structured JSON identification.
+5. In parallel with the reveal, identify the PNG with the selected provider. The reveal starts before waiting for either provider.
 6. Save recognized results to the field journal. Display a recoverable error for failed requests or uncertain matches.
 
 ### Recognition model
 
-Recognition uses **Gemini 3.8 Flash** through the Google Gemini `generateContent` REST API, with an inline PNG and a structured `PokemonIdentification` response. There is no bundled Pokémon-specific Core ML classifier or custom-trained model.
+The recognition selection persists across launches and is fixed for each scan. Gemini remains the default. On-device recognition uses Apple’s Foundation Models image attachment and structured generation on iOS 27+, with readiness checks and no automatic cloud fallback. Choosing on-device recognition requires no Gemini key.
+
+Gemini recognition uses **Gemini 3.8 Flash** through the Google Gemini `generateContent` REST API, with an inline PNG and a structured `PokemonIdentification` response. There is no bundled Pokémon-specific Core ML classifier or custom-trained model.
 
 The implementation follows Google’s [image input](https://ai.google.dev/gemini-api/docs/image-understanding) and [structured output](https://ai.google.dev/gemini-api/docs/generate-content/structured-output) documentation.
 
@@ -94,9 +96,9 @@ Narration settings persist across launches. Speech stops when starting another s
 
 ## Storage and privacy
 
-- In on-device mode, background removal runs locally. Identification still uploads the processed image to Gemini.
+- In on-device mode, background removal runs locally. Recognition uploads the processed image only when Gemini is selected.
 - In Photoroom mode, selected photos are sent to Photoroom for background removal and shadow generation. This consumes the configured account’s Image Editing API credits.
-- In both modes, the processed image is sent to Google Gemini. API quotas and billing apply to the configured Google account.
+- With Gemini recognition selected, the processed image is sent to Google Gemini. API quotas and billing apply to the configured Google account.
 - API keys are stored with `kSecAttrAccessibleWhenUnlockedThisDeviceOnly` in Keychain. They are not committed to the project.
 - Processed PNGs are saved in the app’s Documents/Scans directory. Journal metadata is stored in UserDefaults.
 - The app does not implement a separate recognition server or cloud journal sync.
@@ -126,7 +128,7 @@ Narration settings persist across launches. Speech stops when starting another s
 
 The project has been built successfully with Bitrig. The Duo interface and saved-image framing have been inspected in the simulator. Framing calculations were checked against 36 combinations of viewport, image aspect ratio, and subject position.
 
-For further testing, check a fresh launch, open/closed and partially folded poses, portrait/landscape layouts, camera and library selection, Reduce Motion, missing or rejected keys, network failures, scan cancellation, and journal persistence. Live scanning requires a valid Gemini API key and network access. Only Photoroom mode requires a working Photoroom account. Also test switching modes, retaining the selection after relaunch, on-device background removal with a Gemini key but no Photoroom key, and reopening discoveries created in each mode.
+For further testing, check a fresh launch, open/closed and partially folded poses, portrait/landscape layouts, camera and library selection, Reduce Motion, missing or rejected keys, network failures, scan cancellation, and journal persistence. Live scanning requires either an available on-device recognition model or a valid Gemini API key and network access. Only Photoroom mode requires a working Photoroom account. Also test switching modes, retaining the selection after relaunch, on-device background removal with a Gemini key but no Photoroom key, and reopening discoveries created in each mode.
 
 The standalone Gemini checks cover request encoding, valid and unknown identifications, malformed/blocked/truncated output, and HTTP error handling using a stubbed URL session:
 

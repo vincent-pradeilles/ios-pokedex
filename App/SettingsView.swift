@@ -41,17 +41,34 @@ struct SettingsView: View {
           }
         }
         Section {
-          SecureField("Gemini API key", text: $geminiKey)
-            .textContentType(.password).textInputAutocapitalization(.never).autocorrectionDisabled()
-          Button(geminiKeySaved ? "Key saved" : "Save Gemini key", systemImage: "checkmark") {
-            do {
-              try KeychainStore.save(geminiKey.trimmingCharacters(in: .whitespacesAndNewlines), for: .gemini)
-              geminiKeySaved = true
-            } catch { self.error = error.localizedDescription }
+          Picker("Recognition model", selection: $model.recognitionMode) {
+            ForEach(RecognitionMode.allCases) { mode in
+              Text(mode.title).tag(mode)
+            }
           }
-          Link("Google AI Studio", destination: URL(string: "https://aistudio.google.com/apikey")!)
-        } header: { Text("Gemini identification") } footer: {
-          Text("Each capture sends the background-removed image to Google Gemini for identification. Internet access and a Gemini API key are required; API usage may incur charges. AI matches and field notes can be inaccurate. Your key is stored in Keychain and kept when deleting app data. Clear this field and save to remove it.")
+          .pickerStyle(.segmented)
+          .disabled(model.busy)
+          if model.recognitionMode == .onDevice {
+            Text(OnDeviceIdentificationService.unavailabilityReason ?? "On-device model ready")
+              .font(.footnote).foregroundStyle(.secondary)
+          }
+        } header: { Text("Pokémon recognition") } footer: {
+          Text(model.recognitionMode.explanation + " AI matches and field notes can be inaccurate.")
+        }
+        if model.recognitionMode == .gemini {
+          Section {
+            SecureField("Gemini API key", text: $geminiKey)
+              .textContentType(.password).textInputAutocapitalization(.never).autocorrectionDisabled()
+            Button(geminiKeySaved ? "Key saved" : "Save Gemini key", systemImage: "checkmark") {
+              do {
+                try KeychainStore.save(geminiKey.trimmingCharacters(in: .whitespacesAndNewlines), for: .gemini)
+                geminiKeySaved = true
+              } catch { self.error = error.localizedDescription }
+            }
+            Link("Google AI Studio", destination: URL(string: "https://aistudio.google.com/apikey")!)
+          } header: { Text("Gemini identification") } footer: {
+            Text("Each capture sends the background-removed image to Google Gemini for identification. Internet access and a Gemini API key are required; API usage may incur charges. AI matches and field notes can be inaccurate. Your key is stored in Keychain and kept when deleting app data. Clear this field and save to remove it.")
+          }
         }
         Section {
           Toggle("Read new discoveries aloud", isOn: $model.narrator.automaticallyNarrates)

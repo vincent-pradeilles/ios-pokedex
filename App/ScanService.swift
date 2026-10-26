@@ -46,7 +46,10 @@ actor ScanService {
     return data
   }
 
-  func identify(_ data: Data, key: String) async throws -> PokemonIdentification {
-    try await GeminiIdentificationService().identify(data, key: key)
+  func identify(_ data: Data, mode: RecognitionMode, key: String) async throws -> PokemonIdentification {
+    switch mode {
+    case .gemini: try await GeminiIdentificationService().identify(data, key: key)
+    case .onDevice: try await OnDeviceIdentificationService().identify(data)
+    }
   }
 }

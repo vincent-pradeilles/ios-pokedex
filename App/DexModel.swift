@@ -12,6 +12,9 @@ final class DexModel {
   var busy = false
   var error: String?
   var task: Task<Void, Never>?
+  var recognitionMode: RecognitionMode {
+    didSet { UserDefaults.standard.set(recognitionMode.rawValue, forKey: "recognitionMode") }
+  }
   var removalMode: BackgroundRemovalMode {
     didSet { UserDefaults.standard.set(removalMode.rawValue, forKey: "backgroundRemovalMode") }
   }
@@ -19,6 +22,8 @@ final class DexModel {
   private let localRemoval = LocalBackgroundRemoval()
 
   init() {
+    recognitionMode = UserDefaults.standard.string(forKey: "recognitionMode")
+      .flatMap(RecognitionMode.init(rawValue:)) ?? .gemini
     let storedMode = UserDefaults.standard.string(forKey: "backgroundRemovalMode")
     removalMode = storedMode.flatMap(BackgroundRemovalMode.init(rawValue:))
       ?? (KeychainStore.read().isEmpty ? .onDevice : .photoroom)
@@ -39,10 +44,16 @@ final class DexModel {
   func scan(_ image: UIImage) {
     guard !busy else { return }
     let mode = removalMode
+    let recognition = recognitionMode
     let key = mode == .photoroom ? KeychainStore.read() : ""
     guard mode != .photoroom || !key.isEmpty else { error = "Add your Photoroom API key in Settings before capturing a Pokémon."; return }
-    let geminiKey = KeychainStore.read(for: .gemini)
-    guard !geminiKey.isEmpty else { error = "Add your Gemini API key in Settings before capturing a Pokémon."; return }
+    let geminiKey = recognition == .gemini ? KeychainStore.read(for: .gemini) : ""
+    switch recognition {
+    case .gemini:
+      guard !geminiKey.isEmpty else { error = "Add your Gemini API key in Settings before capturing a Pokémon."; return }
+    case .onDevice:
+      if let reason = OnDeviceIdentificationService.unavailabilityReason { error = reason; return }
+    }
     narrator.stop()
     originalPhoto = image
     cutout = nil
@@ -69,16 +80,16 @@ final class DexModel {
           result = try await service.prepareCutout(image: data, key: key)
         }
         try Task.checkCancellation()
-        // Publish the cutout before awaiting identification so the reveal and Gemini identification overlap.
+        // Publish the cutout before awaiting either recognition provider.
         guard let preparedImage = UIImage(data: result) else {
           throw DexError.message("Couldn’t read the background-removed photo. Please try again.")
         }
         subjectBounds = CutoutFraming.visibleBounds(of: preparedImage)
         cutout = preparedImage
         entry.name = "Identifying…"
-        entry.summary = "Background removed. Gemini is identifying this Pokémon while it settles into the display."
-        phase = "Identifying with Gemini…"
-        let identity = try await service.identify(result, key: geminiKey)
+        entry.summary = "Background removed. Identifying this Pokémon while it settles into the display."
+        phase = recognition == .gemini ? "Identifying with Gemini…" : "Identifying on your iPhone…"
+        let identity = try await service.identify(result, mode: recognition, key: geminiKey)
         try Task.checkCancellation()
         guard identity.recognized, identity.number > 0 else { throw DexError.message("No confident match. Try one Pokémon, well lit and filling the picture.") }
         let newEntry = DexEntry(name: identity.name, number: identity.number, type: identity.type, summary: identity.summary, removalMode: mode)
@@ -125,6 +136,7 @@ final class DexModel {
     phase = "Ready to explore"
     error = nil
     removalMode = KeychainStore.read().isEmpty ? .onDevice : .photoroom
+    recognitionMode = .gemini
     // Clear preferences after assigning properties that persist through didSet.
     UserDefaults.standard.removePersistentDomain(forName: domain)
     narrator = DexNarrator()
