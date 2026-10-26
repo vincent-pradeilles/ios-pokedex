@@ -66,13 +66,13 @@ struct SettingsView: View {
           }
           .disabled(model.busy)
           if dataDeleted {
-            Text("All saved data has been deleted.")
+            Text("Saved data has been deleted. Your saved API keys have been kept.")
               .foregroundStyle(.secondary)
           }
         } header: { Text("Saved data") } footer: {
           Text(model.busy
                ? "Wait for the current capture to finish before deleting saved data."
-               : "Permanently deletes discoveries, scan images, saved locations, and your Photoroom API key, and resets all settings on this device.")
+               : "Permanently deletes discoveries, scan images, and saved locations, and resets all settings on this device. Saved API keys are kept.")
         }
         Section("About") {
           LabeledContent("Pocket Dex", value: "1.0")
@@ -90,7 +90,7 @@ struct SettingsView: View {
           dataDeleted = false
           do {
             try model.deleteAllPersistedData()
-            apiKey = ""
+            apiKey = KeychainStore.read()
             saved = false
             dataDeleted = true
           } catch {
@@ -99,7 +99,7 @@ struct SettingsView: View {
           }
         }
       } message: {
-        Text("All discoveries, scan images, saved locations, and your Photoroom API key will be deleted from this device. All settings will reset. This cannot be undone.")
+        Text("All discoveries, scan images, and saved locations will be deleted from this device. All settings will reset. Saved API keys will be kept. This cannot be undone.")
       }
       .alert("Couldn’t Delete All Data", isPresented: Binding(get: { deletionError != nil }, set: { if !$0 { deletionError = nil } })) {
         Button("OK", role: .cancel) { deletionError = nil }

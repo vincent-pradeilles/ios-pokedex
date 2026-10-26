@@ -122,7 +122,6 @@ final class DexModel {
     guard let domain = Bundle.main.bundleIdentifier else {
       throw DexError.message("Couldn’t access the app’s saved settings.")
     }
-    try KeychainStore.save("")
     try ScanImageStore.deleteAll()
     narrator.stop()
     history = []
@@ -132,7 +131,7 @@ final class DexModel {
     subjectBounds = CGRect(x: 0, y: 0, width: 1, height: 1)
     phase = "Ready to explore"
     error = nil
-    removalMode = .onDevice
+    removalMode = KeychainStore.read().isEmpty ? .onDevice : .photoroom
     // Clear preferences after assigning properties that persist through didSet.
     UserDefaults.standard.removePersistentDomain(forName: domain)
     narrator = DexNarrator()
