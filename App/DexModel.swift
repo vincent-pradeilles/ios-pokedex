@@ -20,6 +20,7 @@ final class DexModel {
   }
   private let service = ScanService()
   private let localRemoval = LocalBackgroundRemoval()
+  private let imagePreparation = ScanImagePreparation()
 
   init() {
     recognitionMode = UserDefaults.standard.string(forKey: "recognitionMode")
@@ -45,39 +46,28 @@ final class DexModel {
     guard !busy else { return }
     let mode = removalMode
     let recognition = recognitionMode
-    let key = mode == .photoroom ? KeychainStore.read() : ""
-    guard mode != .photoroom || !key.isEmpty else { error = "Add your Photoroom API key in Settings before capturing a Pokémon."; return }
-    let geminiKey = recognition == .gemini ? KeychainStore.read(for: .gemini) : ""
-    switch recognition {
-    case .gemini:
-      guard !geminiKey.isEmpty else { error = "Add your Gemini API key in Settings before capturing a Pokémon."; return }
-    case .onDevice:
-      if let reason = OnDeviceIdentificationService.unavailabilityReason { error = reason; return }
-    }
-    narrator.stop()
+    if narrator.isSpeaking { narrator.stop() }
     originalPhoto = image
     cutout = nil
-    entry = DexEntry(name: "Capturing…", number: 0, type: "Unknown", summary: "Isolating your Pokémon. Identification will begin as soon as its background is removed.")
+    entry = DexEntry(name: "Processing…", number: 0, type: "Unknown", summary: "Isolating your Pokémon. Identification will begin as soon as its background is removed.")
     entry.removalMode = mode
     busy = true
-    phase = "Capturing…"
+    phase = "Removing background…"
+    CaptureTiming.mark("still installed")
     task = Task {
       defer { busy = false; task = nil }
       let locationCapture = ScanLocationCapture()
       async let scanLocation = locationCapture.capture()
       do {
-        let scale = min(1, 1600 / max(image.size.width, image.size.height))
-        let size = CGSize(width: image.size.width * scale, height: image.size.height * scale)
-        let format = UIGraphicsImageRendererFormat()
-        format.scale = 1
-        let normalized = UIGraphicsImageRenderer(size: size, format: format).image { _ in image.draw(in: CGRect(origin: .zero, size: size)) }
-        guard let data = normalized.jpegData(compressionQuality: 0.9) else { throw DexError.message("Couldn’t prepare this picture.") }
+        let prepared = try await imagePreparation.prepare(image, removal: mode, recognition: recognition)
+        let data = prepared.data
+        CaptureTiming.mark("JPEG ready")
         let result: Data
         switch mode {
         case .onDevice:
           result = try await localRemoval.process(data)
         case .photoroom:
-          result = try await service.prepareCutout(image: data, key: key)
+          result = try await service.prepareCutout(image: data, key: prepared.photoroomKey)
         }
         try Task.checkCancellation()
         // Publish the cutout before awaiting either recognition provider.
@@ -89,7 +79,7 @@ final class DexModel {
         entry.name = "Identifying…"
         entry.summary = "Background removed. Identifying this Pokémon while it settles into the display."
         phase = recognition == .gemini ? "Identifying with Gemini…" : "Identifying on your iPhone…"
-        let identity = try await service.identify(result, mode: recognition, key: geminiKey)
+        let identity = try await service.identify(result, mode: recognition, key: prepared.geminiKey)
         try Task.checkCancellation()
         guard identity.recognized, identity.number > 0 else { throw DexError.message("No confident match. Try one Pokémon, well lit and filling the picture.") }
         let newEntry = DexEntry(name: identity.name, number: identity.number, type: identity.type, summary: identity.summary, removalMode: mode)

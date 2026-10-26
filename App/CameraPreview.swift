@@ -16,7 +16,7 @@ struct CameraPreview: UIViewRepresentable {
   }
 
   func updateUIView(_ view: CameraPreviewView, context: Context) {
-    if camera.isReady { view.updateRotation() }
+    view.setSessionRunning(camera.isSessionRunning)
   }
 
   static func dismantleUIView(_ view: CameraPreviewView, coordinator: ()) {
@@ -29,12 +29,23 @@ final class CameraPreviewView: UIView {
   var previewLayer: AVCaptureVideoPreviewLayer { layer as! AVCaptureVideoPreviewLayer }
   var onFraming: ((CGSize, CGFloat) -> Void)?
 
+  private var sessionRunning = false
+  private var lastLayoutSize: CGSize = .zero
+
+  func setSessionRunning(_ running: Bool) {
+    guard running != sessionRunning else { return }
+    sessionRunning = running
+    if running { updateRotation() }
+  }
+
   private var rotationCoordinator: AVCaptureDevice.RotationCoordinator?
   private var rotationObservation: NSKeyValueObservation?
 
   override func layoutSubviews() {
     super.layoutSubviews()
-    updateRotation()
+    guard bounds.size != lastLayoutSize else { return }
+    lastLayoutSize = bounds.size
+    if sessionRunning { updateRotation() }
   }
 
   func updateRotation() {
@@ -49,14 +60,14 @@ final class CameraPreviewView: UIView {
     guard let coordinator = rotationCoordinator else { return }
     let angle = coordinator.videoRotationAngleForHorizonLevelPreview
     if let connection = previewLayer.connection {
-      if connection.isVideoRotationAngleSupported(angle) {
+      if connection.videoRotationAngle != angle, connection.isVideoRotationAngleSupported(angle) {
         connection.videoRotationAngle = angle
       }
       if connection.isVideoMirroringSupported {
-        connection.automaticallyAdjustsVideoMirroring = false
-        connection.isVideoMirrored = false
+        if connection.automaticallyAdjustsVideoMirroring { connection.automaticallyAdjustsVideoMirroring = false }
+        if connection.isVideoMirrored { connection.isVideoMirrored = false }
       }
-      if connection.isVideoStabilizationSupported {
+      if connection.isVideoStabilizationSupported, connection.preferredVideoStabilizationMode != .off {
         connection.preferredVideoStabilizationMode = .off
       }
     }

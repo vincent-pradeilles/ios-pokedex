@@ -22,12 +22,19 @@ struct DisplayPanel: View {
         HStack {
           Text(entry.number > 0 ? String(format: "No. %03d", entry.number) : "No. ———")
           Spacer()
-          Text(busy ? "CAPTURING" : isEmpty ? "AWAITING CAPTURE" : entry.number > 0 ? "AI MATCH" : "NO MATCH")
+          Text(busy ? "PROCESSING" : isEmpty ? "AWAITING CAPTURE" : entry.number > 0 ? "AI MATCH" : "NO MATCH")
         }.font(.system(.caption2, design: .monospaced, weight: .medium))
         ZStack {
           GridPattern().stroke(DexTheme.ink.opacity(0.065), lineWidth: 0.5)
           if originalPhoto != nil || image != nil {
             ScanReveal(original: originalPhoto, cutout: image, subjectBounds: subjectBounds, artificialShadow: entry.removalMode == .onDevice, removing: busy && image == nil)
+              .overlay {
+                #if DEBUG
+                if originalPhoto != nil {
+                  CapturePresentationProbe().allowsHitTesting(false).accessibilityHidden(true)
+                }
+                #endif
+              }
               .id((originalPhoto ?? image).map { ObjectIdentifier($0) })
           } else {
             Image(systemName: "viewfinder").font(.system(size: 75)).opacity(0.4)
@@ -35,8 +42,9 @@ struct DisplayPanel: View {
         }
         .frame(height: 225)
         .overlay {
-          if camera.isActive {
-            CameraPreview(camera: camera)
+          // Keep the capture layer mounted. Detaching it while stopRunning()
+          // tears down the session can block the UI on physical devices.
+          CameraPreview(camera: camera)
               .accessibilityLabel("Live camera preview")
               .overlay(alignment: .bottom) {
                 Text(camera.isCapturing ? "CAPTURING…" : camera.isReady ? "PRESS CAMERA TO CAPTURE" : "STARTING CAMERA…")
@@ -46,7 +54,9 @@ struct DisplayPanel: View {
                   .background(.black.opacity(0.65), in: Capsule())
                   .padding(10)
               }
-          }
+              .opacity(camera.isActive ? 1 : 0)
+              .accessibilityHidden(!camera.isActive)
+              .allowsHitTesting(camera.isActive)
         }
         .clipped()
         HStack(alignment: .firstTextBaseline) {

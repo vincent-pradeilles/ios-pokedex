@@ -142,3 +142,9 @@ swiftc App/KeychainStore.swift App/PokemonIdentification.swift App/GeminiIdentif
 The app icon depicts an open red Pokédex. Its generation prompt and asset path are recorded in [Design/AppIcon.md](Design/AppIcon.md).
 
 Pocket Dex is an independent fan project, not an official Pokémon product. Pokémon and Pokémon character names are trademarks of Nintendo, Creatures, and GAME FREAK.
+
+### Capture responsiveness diagnostics
+
+The camera prepares and retains only its latest cropped snapshot while previewing, capped at 15 updates per second. The shutter returns that prepared image. The preview layer stays attached during the transition to the still; camera connection settings change only when needed, avoiding session reconfiguration and teardown on the shutter's UI update. Keychain/model checks and JPEG preparation run in a separate actor after the still is installed.
+
+Debug builds show **Settings → Last capture timings**. Reproduce a delay on the affected device and inspect this report: it separates frame delivery, installing the still, inserting its view, and subsequent UI display-link progress. Display-link timing indicates UI responsiveness, not physical pixel presentation. Simulator timings alone do not establish physical-device latency.

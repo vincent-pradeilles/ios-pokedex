@@ -101,6 +101,13 @@ struct SettingsView: View {
                ? "Wait for the current capture to finish before deleting saved data."
                : "Permanently deletes discoveries, scan images, and saved locations, and resets all settings on this device. Saved API keys are kept.")
         }
+        #if DEBUG
+        Section("Last capture timings") {
+          Text(CaptureTiming.report)
+            .font(.caption.monospaced())
+            .textSelection(.enabled)
+        }
+        #endif
         Section("About") {
           LabeledContent("Pocket Dex", value: "1.0")
           Text("An independent fan project. Pokémon and Pokémon character names are trademarks of Nintendo, Creatures, and GAME FREAK.")

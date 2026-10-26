@@ -42,7 +42,7 @@ struct LeftHardwarePanel: View {
         }
         HStack(alignment: .center, spacing: 20) {
           VStack(alignment: .leading, spacing: 6) {
-            Text(capture.isActive ? "CAMERA READY" : model.busy ? "CAPTURING…" : "POKÉDEX READY")
+            Text(capture.isActive ? "CAMERA READY" : model.busy ? "PROCESSING…" : "POKÉDEX READY")
             Text("FOUND  \(model.capturedSpecies.count.formatted(.number.precision(.integerLength(3))))")
             Text(model.entry.number > 0 ? "AI MATCH" : "AWAITING CAPTURE")
           }.font(.system(size: 10, weight: .medium, design: .monospaced))
