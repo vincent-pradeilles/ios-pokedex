@@ -1,5 +1,4 @@
 import SwiftUI
-import FoundationModels
 
 @MainActor @Observable
 final class DexModel {
@@ -37,22 +36,13 @@ final class DexModel {
     }
   }
 
-  var modelStatus: String {
-    guard #available(iOS 27.0, *) else { return "Image identification requires iOS 27 or later." }
-    switch SystemLanguageModel.default.availability {
-    case .available: return "On-device model ready"
-    case .unavailable(.appleIntelligenceNotEnabled): return "Enable Apple Intelligence in system Settings to identify Pokémon."
-    case .unavailable(.modelNotReady): return "Apple’s on-device model is downloading. Try again when it is ready."
-    case .unavailable: return "On-device identification isn’t available on this device. Try a supported iPhone with Apple Intelligence."
-    }
-  }
-
   func scan(_ image: UIImage) {
     guard !busy else { return }
     let mode = removalMode
     let key = mode == .photoroom ? KeychainStore.read() : ""
     guard mode != .photoroom || !key.isEmpty else { error = "Add your Photoroom API key in Settings before capturing a Pokémon."; return }
-    guard #available(iOS 27.0, *), SystemLanguageModel.default.availability == .available else { error = modelStatus; return }
+    let geminiKey = KeychainStore.read(for: .gemini)
+    guard !geminiKey.isEmpty else { error = "Add your Gemini API key in Settings before capturing a Pokémon."; return }
     narrator.stop()
     originalPhoto = image
     cutout = nil
@@ -67,7 +57,9 @@ final class DexModel {
       do {
         let scale = min(1, 1600 / max(image.size.width, image.size.height))
         let size = CGSize(width: image.size.width * scale, height: image.size.height * scale)
-        let normalized = UIGraphicsImageRenderer(size: size).image { _ in image.draw(in: CGRect(origin: .zero, size: size)) }
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1
+        let normalized = UIGraphicsImageRenderer(size: size, format: format).image { _ in image.draw(in: CGRect(origin: .zero, size: size)) }
         guard let data = normalized.jpegData(compressionQuality: 0.9) else { throw DexError.message("Couldn’t prepare this picture.") }
         let result: Data
         switch mode {
@@ -77,14 +69,16 @@ final class DexModel {
           result = try await service.prepareCutout(image: data, key: key)
         }
         try Task.checkCancellation()
-        // Publish the cutout before awaiting identification so the reveal and local inference overlap.
-        let preparedImage = UIImage(data: result)
+        // Publish the cutout before awaiting identification so the reveal and Gemini identification overlap.
+        guard let preparedImage = UIImage(data: result) else {
+          throw DexError.message("Couldn’t read the background-removed photo. Please try again.")
+        }
         subjectBounds = CutoutFraming.visibleBounds(of: preparedImage)
         cutout = preparedImage
         entry.name = "Identifying…"
-        entry.summary = "Background removed. Your iPhone is identifying this Pokémon while it settles into the display."
-        phase = "Identifying on your iPhone…"
-        let identity = try await service.identify(result)
+        entry.summary = "Background removed. Gemini is identifying this Pokémon while it settles into the display."
+        phase = "Identifying with Gemini…"
+        let identity = try await service.identify(result, key: geminiKey)
         try Task.checkCancellation()
         guard identity.recognized, identity.number > 0 else { throw DexError.message("No confident match. Try one Pokémon, well lit and filling the picture.") }
         let newEntry = DexEntry(name: identity.name, number: identity.number, type: identity.type, summary: identity.summary, removalMode: mode)
@@ -95,7 +89,6 @@ final class DexModel {
         savedEntry.location = await scanLocation
         try Task.checkCancellation()
         entry = savedEntry
-        cutout = UIImage(data: result)
         let updatedHistory = [savedEntry] + history
         let savedHistory = try JSONEncoder().encode(updatedHistory)
         UserDefaults.standard.set(savedHistory, forKey: "entries")

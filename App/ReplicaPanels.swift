@@ -44,7 +44,7 @@ struct LeftHardwarePanel: View {
           VStack(alignment: .leading, spacing: 6) {
             Text(capture.isActive ? "CAMERA READY" : model.busy ? "CAPTURING…" : "POKÉDEX READY")
             Text("FOUND  \(model.capturedSpecies.count.formatted(.number.precision(.integerLength(3))))")
-            Text(model.entry.number > 0 ? "LOCAL AI MATCH" : "AWAITING CAPTURE")
+            Text(model.entry.number > 0 ? "GEMINI MATCH" : "AWAITING CAPTURE")
           }.font(.system(size: 10, weight: .medium, design: .monospaced))
             .foregroundStyle(Color(red: 0.18, green: 0.30, blue: 0.07))
             .frame(width: 138, height: 65, alignment: .leading).padding(.leading, 12)
@@ -169,7 +169,7 @@ struct RightHardwarePanel: View {
           VStack(alignment: .leading, spacing: 20) {
             Text(model.entry.type).font(.headline).foregroundStyle(.secondary)
             Text(model.entry.summary).font(.title3)
-            Text(model.entry.number > 0 ? "Generated on device. AI identification and notes can be inaccurate." : "Choose a photo or use the camera to begin. Background removal uses Photoroom; identification happens on your iPhone.").font(.footnote).foregroundStyle(.secondary)
+            Text(model.entry.number > 0 ? "Identified with Gemini. AI identification and notes can be inaccurate." : "Choose a photo or use the camera to begin. Choose a background-removal option in Settings; Gemini identifies the processed photo.").font(.footnote).foregroundStyle(.secondary)
           }.padding(24).frame(maxWidth: .infinity, alignment: .leading)
         }.navigationTitle(model.entry.name)
           .toolbar { Button("Done", systemImage: "checkmark") { notes = false } }

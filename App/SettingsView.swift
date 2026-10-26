@@ -4,6 +4,8 @@ struct SettingsView: View {
   @Bindable var model: DexModel
   @State private var apiKey = ""
   @State private var saved = false
+  @State private var geminiKey = ""
+  @State private var geminiKeySaved = false
   @State private var error: String?
   @State private var confirmsDeletion = false
   @State private var deletionError: String?
@@ -38,10 +40,18 @@ struct SettingsView: View {
             Text("Your key is stored securely in this iPhone’s Keychain. Clear the field and save to remove it. Each capture sends your selected photo to Photoroom for background removal and a soft AI shadow. This uses the Image Editing API (Plus plan) and its credits.")
           }
         }
-        Section("On-device identification") {
-          Label(model.modelStatus, systemImage: "viewfinder")
-          Text("After background removal, Apple’s on-device model identifies the Pokémon. Apple Intelligence and iOS 27 or later are required. AI matches and field notes can be inaccurate.")
-            .font(.footnote).foregroundStyle(.secondary)
+        Section {
+          SecureField("Gemini API key", text: $geminiKey)
+            .textContentType(.password).textInputAutocapitalization(.never).autocorrectionDisabled()
+          Button(geminiKeySaved ? "Key saved" : "Save Gemini key", systemImage: "checkmark") {
+            do {
+              try KeychainStore.save(geminiKey.trimmingCharacters(in: .whitespacesAndNewlines), for: .gemini)
+              geminiKeySaved = true
+            } catch { self.error = error.localizedDescription }
+          }
+          Link("Google AI Studio", destination: URL(string: "https://aistudio.google.com/apikey")!)
+        } header: { Text("Gemini identification") } footer: {
+          Text("Each capture sends the background-removed image to Google Gemini for identification. Internet access and a Gemini API key are required; API usage may incur charges. AI matches and field notes can be inaccurate. Your key is stored in Keychain and kept when deleting app data. Clear this field and save to remove it.")
         }
         Section {
           Toggle("Read new discoveries aloud", isOn: $model.narrator.automaticallyNarrates)
@@ -82,7 +92,11 @@ struct SettingsView: View {
       }
       .navigationTitle("Settings")
       .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done", systemImage: "checkmark") { dismiss() } } }
-      .onAppear { apiKey = KeychainStore.read() }
+      .onAppear {
+        apiKey = KeychainStore.read()
+        geminiKey = KeychainStore.read(for: .gemini)
+      }
+      .onChange(of: geminiKey) { geminiKeySaved = false }
       .onChange(of: apiKey) { saved = false }
       .alert("Delete All Persisted Data?", isPresented: $confirmsDeletion) {
         Button("Cancel", role: .cancel) { }

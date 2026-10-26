@@ -2,19 +2,19 @@
 
 A SwiftUI Pokédex replica designed for iPhone Duo. Unfold the phone to reveal two red hardware-inspired panels, an inset scanner display, a blue keypad, and a hinge aligned with the device’s physical fold.
 
-The app identifies Pokémon from photos using Apple’s on-device Foundation Models framework. Choose Apple’s on-device Vision API or Photoroom to remove the background before the image is analyzed locally. On-device processing uses a subtle display shadow; Photoroom adds a controllable AI shadow.
+The app identifies Pokémon from photos using Google Gemini. Choose Apple’s on-device Vision API or Photoroom to remove the background before the processed image is sent to Gemini. On-device processing uses a subtle display shadow; Photoroom adds a controllable AI shadow.
 
 ## Experience
 
 - **Made for Duo:** edge-to-edge casing with a fold-aware hinge and fixed, non-scrolling main panels.
 - **Closed cover:** the compact layout reproduces the exterior of the Pokédex. Unfold Duo to access scanning and controls.
 - **Empty on launch:** no default Pokémon; saved discoveries remain accessible in the journal.
-- **Camera or library:** take a photo or select one with the system photo picker.
+- **Camera or library:** capture the latest live camera frame immediately or select a photo with the system photo picker. Camera scans use preview resolution (up to 1080p), avoiding the still-photo processing delay; captured frames retain the preview crop.
 - **Continuous reveal:** shimmer appears only over the selected photo. The background dissolves as the photo and cutout move together into their final framing, while identification runs.
 - **Subject-aware framing:** transparent margins are excluded when fitting the Pokémon and its shadow into the display.
 - **Spoken entries:** optional automatic narration with an electronically treated US-English system voice, a replay/stop button, and voice preview in Settings.
 - **Field journal:** successful identifications and processed images are saved locally.
-- **Secure configuration:** the Photoroom API key is stored in the device’s Keychain.
+- **Secure configuration:** Photoroom and Gemini API keys are stored in the device’s Keychain.
 
 ## Requirements
 
@@ -23,12 +23,12 @@ The app identifies Pokémon from photos using Apple’s on-device Foundation Mod
 | Development environment | Bitrig with the iOS 27.1 SDK |
 | Intended device | iPhone Duo; the open layout is the primary experience |
 | Minimum deployment target | iOS 26.0 |
-| Image identification | iOS 27 or later, Apple Intelligence enabled, and an available on-device model |
+| Image identification | Gemini API key with access to `gemini-3.8-flash` |
 | Fold-aware layout APIs | iOS 27.1 or later |
 | Photoroom (optional) | API key with Image Editing API access (Plus plan) and available credits when using Photoroom mode |
-| Network | Required only for Photoroom processing; on-device removal and identification do not upload photos |
+| Network | Required for Gemini identification in both background-removal modes |
 
-The app can launch on the minimum deployment target, but image identification and Duo-specific layout APIs have separate availability checks. Compact layouts show the closed cover rather than a complete conventional iPhone interface.
+The app can launch on the minimum deployment target, with availability checks for Duo-specific layout APIs. Compact layouts show the closed cover rather than a complete conventional iPhone interface.
 
 ## Run in Bitrig
 
@@ -36,25 +36,27 @@ The app can launch on the minimum deployment target, but image identification an
 2. Build the `Pocket Dex` target using the iOS 27.1 SDK.
 3. Choose iPhone Duo in the built-in simulator and unfold it to see the full interface.
 4. Open Settings using the small gear key on the right panel.
-5. Select **On device** or **Photoroom** under Scan processing. For Photoroom, enter your API key and tap **Save key**. Settings also reports whether the local identification model is ready.
+5. Select **On device** or **Photoroom** under Scan processing. For Photoroom, enter your API key and tap **Save key**. Enter a Gemini key under **Gemini identification** and tap **Save Gemini key**.
 6. Tap the camera button or **PHOTO** to begin a scan.
 
-The camera needs a device with an available camera and permission to use it. Use the photo picker when testing without one. Model availability can differ between a simulator and a physical device; the app reports unavailable models instead of substituting a fabricated result.
+The camera needs a device with an available camera and permission to use it. Use the photo picker when testing without one. Gemini identification works independently of Apple Intelligence availability.
 
-To remove the saved API key, clear its field in Settings and save again.
+To remove a saved API key, clear its field in Settings and save again. Deleting persisted app data keeps both API keys.
 
 ## Scan pipeline
 
-1. Check that the local identification model is available and, for Photoroom mode, that an API key is configured.
-2. Prepare the selected photo. On-device mode runs Vision’s `VNGenerateForegroundInstanceMaskRequest` locally; Photoroom mode uploads to `POST https://image-api.photoroom.com/v2/edit`.
+1. Check that a Gemini API key is configured and, for Photoroom mode, that a Photoroom API key is configured.
+2. Crop camera photos to the centered aspect-fill viewport, retaining the preview rotation. The live preview and still share the same display area. Prepare the selected photo. On-device mode runs Vision’s `VNGenerateForegroundInstanceMaskRequest` locally; Photoroom mode uploads to `POST https://image-api.photoroom.com/v2/edit`.
 3. Produce a transparent PNG, preserving the original canvas and subject position for the reveal. Photoroom includes its AI shadow; on-device mode adds a subtle animated display shadow.
 4. Publish the processed image immediately and begin the animated background dissolve and reframing.
-5. In parallel with the reveal, send an image attachment to a Foundation Models `LanguageModelSession` and generate a structured identification.
+5. In parallel with the reveal, send the PNG to Gemini and request a structured JSON identification.
 6. Save recognized results to the field journal. Display a recoverable error for failed requests or uncertain matches.
 
 ### Recognition model
 
-Recognition uses Apple’s default on-device system language model through **Foundation Models**, with an image attachment and a structured `PokemonIdentification` response. There is no bundled Pokémon-specific Core ML classifier or custom-trained model.
+Recognition uses **Gemini 3.8 Flash** through the Google Gemini `generateContent` REST API, with an inline PNG and a structured `PokemonIdentification` response. There is no bundled Pokémon-specific Core ML classifier or custom-trained model.
+
+The implementation follows Google’s [image input](https://ai.google.dev/gemini-api/docs/image-understanding) and [structured output](https://ai.google.dev/gemini-api/docs/generate-content/structured-output) documentation.
 
 The result includes the species name, National Pokédex number, elemental type, and short field notes. These are AI-generated and can be inaccurate; an explicit unrecognized result is not saved as a discovery.
 
@@ -92,10 +94,10 @@ Narration settings persist across launches. Speech stops when starting another s
 
 ## Storage and privacy
 
-- In on-device mode, background removal runs locally with no API key or photo upload.
+- In on-device mode, background removal runs locally. Identification still uploads the processed image to Gemini.
 - In Photoroom mode, selected photos are sent to Photoroom for background removal and shadow generation. This consumes the configured account’s Image Editing API credits.
-- The processed image is analyzed locally through Apple’s on-device model.
-- The API key is stored with `kSecAttrAccessibleWhenUnlockedThisDeviceOnly` in Keychain. It is not committed to the project.
+- In both modes, the processed image is sent to Google Gemini. API quotas and billing apply to the configured Google account.
+- API keys are stored with `kSecAttrAccessibleWhenUnlockedThisDeviceOnly` in Keychain. They are not committed to the project.
 - Processed PNGs are saved in the app’s Documents/Scans directory. Journal metadata is stored in UserDefaults.
 - The app does not implement a separate recognition server or cloud journal sync.
 
@@ -112,19 +114,26 @@ Narration settings persist across launches. Speech stops when starting another s
 | `App/CutoutFraming.swift` | Visible subject and shadow bounds |
 | `App/DexNarrator.swift` | Speech rendering, voice preference, and audio session lifecycle |
 | `App/DexVoicePlayer.swift` | PCM playback, speaker EQ, radio coloration, and short doubling effect |
-| `App/DexModel.swift` | Scan lifecycle, model availability, and journal persistence |
+| `App/DexModel.swift` | Scan lifecycle, API-key checks, and journal persistence |
 | `App/BackgroundRemovalMode.swift` | Persisted processing-mode choices |
 | `App/LocalBackgroundRemoval.swift` | On-device Vision masking and transparent PNG export |
-| `App/ScanService.swift` | Photoroom request and Foundation Models inference |
+| `App/ScanService.swift` | Photoroom request and Gemini identification routing |
 | `App/KeychainStore.swift` | Secure API-key storage |
-| `App/SettingsView.swift` | API configuration and model status |
+| `App/SettingsView.swift` | API configuration and data reset |
 | `Project.json` | Bitrig-managed target configuration and camera purpose string |
 
 ## Validation
 
 The project has been built successfully with Bitrig. The Duo interface and saved-image framing have been inspected in the simulator. Framing calculations were checked against 36 combinations of viewport, image aspect ratio, and subject position.
 
-For further testing, check a fresh launch, open/closed and partially folded poses, portrait/landscape layouts, camera and library selection, Reduce Motion, missing or rejected keys, unavailable local models, scan cancellation, and journal persistence. Live scanning requires an available local model. Only Photoroom mode requires a working Photoroom account. Also test switching modes, retaining the selection after relaunch, scanning locally without a key, and reopening discoveries created in each mode.
+For further testing, check a fresh launch, open/closed and partially folded poses, portrait/landscape layouts, camera and library selection, Reduce Motion, missing or rejected keys, network failures, scan cancellation, and journal persistence. Live scanning requires a valid Gemini API key and network access. Only Photoroom mode requires a working Photoroom account. Also test switching modes, retaining the selection after relaunch, on-device background removal with a Gemini key but no Photoroom key, and reopening discoveries created in each mode.
+
+The standalone Gemini checks cover request encoding, valid and unknown identifications, malformed/blocked/truncated output, and HTTP error handling using a stubbed URL session:
+
+```sh
+swiftc App/KeychainStore.swift App/PokemonIdentification.swift App/GeminiIdentificationService.swift Tests/GeminiIdentificationChecks.swift -o /tmp/pocketdex-gemini-checks
+/tmp/pocketdex-gemini-checks
+```
 
 ## Artwork and attribution
 

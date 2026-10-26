@@ -13,7 +13,7 @@ enum BackgroundRemovalMode: String, Codable, CaseIterable, Identifiable {
   }
   var explanation: String {
     switch self {
-    case .onDevice: "Remove backgrounds privately on your iPhone with a subtle display shadow. No API key, upload, or Photoroom credits needed."
+    case .onDevice: "Remove backgrounds privately on your iPhone with a subtle display shadow. Background removal needs no Photoroom key or credits. The processed image is then sent to Gemini for identification."
     case .photoroom: "Send photos to Photoroom for background removal and controllable AI shadows. Requires an API key and Image Editing API credits."
     }
   }
