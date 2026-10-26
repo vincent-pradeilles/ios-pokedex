@@ -48,8 +48,17 @@ final class CameraPreviewView: UIView {
     }
     guard let coordinator = rotationCoordinator else { return }
     let angle = coordinator.videoRotationAngleForHorizonLevelPreview
-    if let connection = previewLayer.connection, connection.isVideoRotationAngleSupported(angle) {
-      connection.videoRotationAngle = angle
+    if let connection = previewLayer.connection {
+      if connection.isVideoRotationAngleSupported(angle) {
+        connection.videoRotationAngle = angle
+      }
+      if connection.isVideoMirroringSupported {
+        connection.automaticallyAdjustsVideoMirroring = false
+        connection.isVideoMirrored = false
+      }
+      if connection.isVideoStabilizationSupported {
+        connection.preferredVideoStabilizationMode = .off
+      }
     }
     // Capture uses the same rotation as the visible preview, not a separately
     // horizon-leveled angle that could rotate the subject at the shutter.

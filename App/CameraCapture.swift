@@ -1,5 +1,6 @@
 import AVFoundation
 import Observation
+import CoreImage
 import UIKit
 
 @MainActor
@@ -8,7 +9,11 @@ final class CameraCapture {
   private(set) var isActive = false
   private(set) var isReady = false
   private(set) var isCapturing = false
-  @ObservationIgnored var rotationAngle: CGFloat = 90
+  @ObservationIgnored var rotationAngle: CGFloat = 90 {
+    didSet {
+      if rotationAngle != oldValue { engine.updateRotation(rotationAngle) }
+    }
+  }
   @ObservationIgnored var previewSize: CGSize = .zero
   private let engine = CameraEngine()
   private var generation = UUID()
@@ -47,13 +52,9 @@ final class CameraCapture {
     let token = generation
     isCapturing = true
     do {
-      let data = try await engine.capture(angle: rotationAngle)
+      let image = try await engine.capture(viewport: viewport)
       guard generation == token else { return nil }
-      guard let image = UIImage(data: data) else {
-        throw DexError.message("Couldn’t read the camera photo. Please try again.")
-      }
-      let cropped = CameraPhotoCrop.crop(image, to: viewport)
-      return cropped
+      return image
     } catch {
       guard generation == token else { return nil }
       isCapturing = false
@@ -70,13 +71,15 @@ final class CameraCapture {
   }
 }
 
-// All capture-session configuration and blocking operations run on this serial queue.
-private final class CameraEngine: NSObject, AVCapturePhotoCaptureDelegate, @unchecked Sendable {
+// Capture the latest preview frame instead of waiting for the still-photo pipeline.
+// Session changes, frame delivery, and rendering share a serial queue.
+private final class CameraEngine: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, @unchecked Sendable {
   let session = AVCaptureSession()
-  private let queue = DispatchQueue(label: "PocketDex.camera")
-  private let output = AVCapturePhotoOutput()
-  private var pending: CheckedContinuation<Data, Error>?
-  private var captureID: Int64?
+  private let queue = DispatchQueue(label: "PocketDex.camera", qos: .userInitiated)
+  private let output = AVCaptureVideoDataOutput()
+  private let context = CIContext()
+  private var latestFrame: CVPixelBuffer?
+  private var rotationAngle: CGFloat = 90
 
   func start() async throws {
     try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
@@ -89,20 +92,22 @@ private final class CameraEngine: NSObject, AVCapturePhotoCaptureDelegate, @unch
             }
             let input = try AVCaptureDeviceInput(device: device)
             self.session.beginConfiguration()
-            self.session.sessionPreset = .photo
+            defer { self.session.commitConfiguration() }
+            self.session.sessionPreset = self.session.canSetSessionPreset(.hd1920x1080) ? .hd1920x1080 : .high
             guard self.session.canAddInput(input) else {
-              self.session.commitConfiguration()
               throw DexError.message("Couldn’t connect to the camera. Please try again.")
             }
             self.session.addInput(input)
             guard self.session.canAddOutput(self.output) else {
               self.session.removeInput(input)
-              self.session.commitConfiguration()
-              throw DexError.message("Photo capture isn’t available. Choose a photo from your library instead.")
+              throw DexError.message("Camera capture isn’t available. Choose a photo from your library instead.")
             }
+            self.output.alwaysDiscardsLateVideoFrames = true
+            self.output.setSampleBufferDelegate(self, queue: self.queue)
             self.session.addOutput(self.output)
-            self.session.commitConfiguration()
+            self.configureConnection()
           }
+          self.latestFrame = nil
           self.session.startRunning()
           guard self.session.isRunning else {
             throw DexError.message("Couldn’t start the camera. Please try again.")
@@ -113,42 +118,56 @@ private final class CameraEngine: NSObject, AVCapturePhotoCaptureDelegate, @unch
     }
   }
 
-  func capture(angle: CGFloat) async throws -> Data {
+  func updateRotation(_ angle: CGFloat) {
+    queue.async {
+      self.rotationAngle = angle
+      self.latestFrame = nil
+      self.configureConnection()
+    }
+  }
+
+  private func configureConnection() {
+    guard let connection = output.connection(with: .video) else { return }
+    if connection.isVideoRotationAngleSupported(rotationAngle) {
+      connection.videoRotationAngle = rotationAngle
+    }
+    if connection.isVideoMirroringSupported {
+      connection.automaticallyAdjustsVideoMirroring = false
+      connection.isVideoMirrored = false
+    }
+    if connection.isVideoStabilizationSupported {
+      connection.preferredVideoStabilizationMode = .off
+    }
+  }
+
+  func capture(viewport: CGSize) async throws -> UIImage {
     try await withCheckedThrowingContinuation { continuation in
       queue.async {
-        guard self.session.isRunning, !self.session.isInterrupted, self.pending == nil else {
-          continuation.resume(throwing: DexError.message("The camera is unavailable. Cancel and reopen the camera to try again."))
+        guard self.session.isRunning, !self.session.isInterrupted, let frame = self.latestFrame else {
+          continuation.resume(throwing: DexError.message("The camera is still getting ready. Please try again."))
           return
         }
-        self.pending = continuation
-        if let connection = self.output.connection(with: .video), connection.isVideoRotationAngleSupported(angle) {
-          connection.videoRotationAngle = angle
+        let image = CIImage(cvPixelBuffer: frame)
+        guard let cgImage = self.context.createCGImage(image, from: image.extent) else {
+          continuation.resume(throwing: DexError.message("Couldn’t read the camera frame. Please try again."))
+          return
         }
-        let settings = AVCapturePhotoSettings()
-        self.captureID = settings.uniqueID
-        self.output.capturePhoto(with: settings, delegate: self)
+        // Render only on a shutter tap, off the main thread. Ordinary preview
+        // frames retain just one pixel buffer and never encode JPEGs.
+        let photo = CameraPhotoCrop.crop(UIImage(cgImage: cgImage), to: viewport)
+        continuation.resume(returning: photo)
       }
     }
   }
 
   func stop() {
     queue.async {
+      self.latestFrame = nil
       self.session.stopRunning()
-      self.pending?.resume(throwing: CancellationError())
-      self.pending = nil
-      self.captureID = nil
     }
   }
 
-  func photoOutput(_ output: AVCapturePhotoOutput, didFinishProcessingPhoto photo: AVCapturePhoto, error: Error?) {
-    let data = photo.fileDataRepresentation()
-    let id = photo.resolvedSettings.uniqueID
-    queue.async {
-      guard self.captureID == id else { return }
-      if let error { self.pending?.resume(throwing: error) }
-      else if let data { self.pending?.resume(returning: data) }
-      else { self.pending?.resume(throwing: DexError.message("Couldn’t capture the photo. Please try again.")) }
-      self.pending = nil
-    }
+  func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
+    latestFrame = CMSampleBufferGetImageBuffer(sampleBuffer)
   }
 }
