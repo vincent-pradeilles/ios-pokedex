@@ -83,7 +83,15 @@ struct ContentView: View {
     guard !model.busy else { return }
     do {
       if camera.isActive {
-        if let image = try await camera.capture() { model.scan(image) }
+        if let image = try await camera.capture() {
+          // Install the still before removing the live layer in the same update.
+          var transaction = Transaction()
+          transaction.disablesAnimations = true
+          withTransaction(transaction) {
+            model.scan(image)
+            camera.stop()
+          }
+        }
       } else {
         model.narrator.stop()
         try await camera.start()

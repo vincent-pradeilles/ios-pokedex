@@ -8,7 +8,10 @@ struct CameraPreview: UIViewRepresentable {
     let view = CameraPreviewView()
     view.previewLayer.session = camera.session
     view.previewLayer.videoGravity = .resizeAspectFill
-    view.onRotation = { camera.rotationAngle = $0 }
+    view.onFraming = { size, angle in
+      camera.previewSize = size
+      camera.rotationAngle = angle
+    }
     return view
   }
 
@@ -24,7 +27,7 @@ struct CameraPreview: UIViewRepresentable {
 final class CameraPreviewView: UIView {
   override class var layerClass: AnyClass { AVCaptureVideoPreviewLayer.self }
   var previewLayer: AVCaptureVideoPreviewLayer { layer as! AVCaptureVideoPreviewLayer }
-  var onRotation: ((CGFloat) -> Void)?
+  var onFraming: ((CGSize, CGFloat) -> Void)?
 
   private var rotationCoordinator: AVCaptureDevice.RotationCoordinator?
   private var rotationObservation: NSKeyValueObservation?
@@ -48,6 +51,8 @@ final class CameraPreviewView: UIView {
     if let connection = previewLayer.connection, connection.isVideoRotationAngleSupported(angle) {
       connection.videoRotationAngle = angle
     }
-    onRotation?(coordinator.videoRotationAngleForHorizonLevelCapture)
+    // Capture uses the same rotation as the visible preview, not a separately
+    // horizon-leveled angle that could rotate the subject at the shutter.
+    onFraming?(bounds.size, angle)
   }
 }

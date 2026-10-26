@@ -8,7 +8,8 @@ final class CameraCapture {
   private(set) var isActive = false
   private(set) var isReady = false
   private(set) var isCapturing = false
-  var rotationAngle: CGFloat = 90
+  @ObservationIgnored var rotationAngle: CGFloat = 90
+  @ObservationIgnored var previewSize: CGSize = .zero
   private let engine = CameraEngine()
   private var generation = UUID()
   var session: AVCaptureSession { engine.session }
@@ -37,6 +38,12 @@ final class CameraCapture {
 
   func capture() async throws -> UIImage? {
     guard isReady, !isCapturing else { return nil }
+    guard previewSize.width > 0, previewSize.height > 0 else {
+      throw DexError.message("The camera preview is still starting. Please try again.")
+    }
+    // Freeze the framing at the shutter so layout changes during capture cannot
+    // change which part of the photo is retained.
+    let viewport = previewSize
     let token = generation
     isCapturing = true
     do {
@@ -45,8 +52,8 @@ final class CameraCapture {
       guard let image = UIImage(data: data) else {
         throw DexError.message("Couldn’t read the camera photo. Please try again.")
       }
-      stop()
-      return image
+      let cropped = CameraPhotoCrop.crop(image, to: viewport)
+      return cropped
     } catch {
       guard generation == token else { return nil }
       isCapturing = false
